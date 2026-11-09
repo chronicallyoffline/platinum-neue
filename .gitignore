@@ -1,0 +1,6 @@
+/build/
+/pkg/*
+!/pkg/PKGBUILD
+/*.png
+/.vscode/
+/vscode/*.vsix

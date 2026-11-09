@@ -1,0 +1,15 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Platinum Neue"
+            }
+        ],
+        "Description": "Quiet, tactile Platinum descendant (light)",
+        "Id": "platinum-neue-light",
+        "License": "GPL-2.0-or-later",
+        "Name": "Platinum Neue Light",
+        "Version": "0.1"
+    },
+    "X-Plasma-API": "5.0"
+}

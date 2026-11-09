@@ -1,0 +1,2056 @@
+/*
+ * SPDX-FileCopyrightText: 2014 Hugo Pereira Da Costa <hugo.pereira@free.fr>
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+#include "platinumneuehelper.h"
+
+#include "platinumneue.h"
+#include "platinumneuepropertynames.h"
+
+#include <KColorScheme>
+#include <KColorUtils>
+#include <KIconLoader>
+#include <KWindowSystem>
+#include <qobject.h>
+#if __has_include(<KX11Extras>)
+#include <KX11Extras>
+#endif
+
+#include <QApplication>
+#include <QDockWidget>
+#include <QFileInfo>
+#include <QMainWindow>
+#include <QMdiArea>
+#include <QMenuBar>
+#include <QPainter>
+#include <QStyleOption>
+#include <QTreeView>
+#include <QWindow>
+
+#include <QDialog>
+#include <algorithm>
+
+namespace PlatinumNeue
+{
+//* contrast for arrow and treeline rendering
+static const qreal arrowShade = 0.15;
+
+static const qreal highlightBackgroundAlpha = Metrics::Blend_Value;
+
+static const auto radioCheckSunkenDarkeningFactor = 110;
+
+PaletteChangedEventFilter::PaletteChangedEventFilter(Helper *helper)
+    : QObject(helper)
+    , _helper(helper)
+{
+}
+
+bool PaletteChangedEventFilter::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() != QEvent::ApplicationPaletteChange || watched != qApp) {
+        return QObject::eventFilter(watched, event);
+    }
+    if (!qApp->property("KDE_COLOR_SCHEME_PATH").isValid()) {
+        return QObject::eventFilter(watched, event);
+    }
+    const auto path = qApp->property("KDE_COLOR_SCHEME_PATH").toString();
+    if (!path.isEmpty()) {
+        KConfig config(path, KConfig::SimpleConfig);
+        KConfigGroup group(config.group(QStringLiteral("WM")));
+        const QPalette palette(QApplication::palette());
+        _helper->_activeTitleBarColor = group.readEntry("activeBackground", palette.color(QPalette::Active, QPalette::Highlight));
+        _helper->_activeTitleBarTextColor = group.readEntry("activeForeground", palette.color(QPalette::Active, QPalette::HighlightedText));
+        _helper->_inactiveTitleBarColor = group.readEntry("inactiveBackground", palette.color(QPalette::Disabled, QPalette::Highlight));
+        _helper->_inactiveTitleBarTextColor = group.readEntry("inactiveForeground", palette.color(QPalette::Disabled, QPalette::HighlightedText));
+    }
+    return QObject::eventFilter(watched, event);
+}
+
+//____________________________________________________________________
+Helper::Helper(KSharedConfig::Ptr config)
+    : QObject()
+    , _config(std::move(config))
+    , _kwinConfig(KSharedConfig::openConfig("kwinrc"))
+    , _eventFilter(new PaletteChangedEventFilter(this))
+{
+}
+
+//____________________________________________________________________
+KSharedConfig::Ptr Helper::config() const
+{
+    return _config;
+}
+
+//____________________________________________________________________
+void Helper::loadConfig()
+{
+    _viewFocusBrush = KStatefulBrush(KColorScheme::View, KColorScheme::FocusColor);
+    _viewHoverBrush = KStatefulBrush(KColorScheme::View, KColorScheme::HoverColor);
+    _viewNegativeTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NegativeText);
+    _viewNeutralTextBrush = KStatefulBrush(KColorScheme::View, KColorScheme::NeutralText);
+
+    const QPalette palette(QApplication::palette());
+    _config->reparseConfiguration();
+    _kwinConfig->reparseConfiguration();
+    _cachedAutoValid = false;
+
+    KConfigGroup globalGroup(_config->group(QStringLiteral("WM")));
+    _activeTitleBarColor = globalGroup.readEntry("activeBackground", palette.color(QPalette::Active, QPalette::Highlight));
+    _activeTitleBarTextColor = globalGroup.readEntry("activeForeground", palette.color(QPalette::Active, QPalette::HighlightedText));
+    _inactiveTitleBarColor = globalGroup.readEntry("inactiveBackground", palette.color(QPalette::Disabled, QPalette::Highlight));
+    _inactiveTitleBarTextColor = globalGroup.readEntry("inactiveForeground", palette.color(QPalette::Disabled, QPalette::HighlightedText));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    _contrastBias = KColorScheme::frameContrast();
+#else
+    _contrastBias = 0.2;
+#endif
+
+    if (const QString colorSchemePath = qApp->property("KDE_COLOR_SCHEME_PATH").toString(); !colorSchemePath.isEmpty()) {
+        KConfig config(colorSchemePath, KConfig::SimpleConfig);
+        KConfigGroup appGroup(config.group(QStringLiteral("WM")));
+        _activeTitleBarColor = appGroup.readEntry("activeBackground", _activeTitleBarColor);
+        _activeTitleBarTextColor = appGroup.readEntry("activeForeground", _activeTitleBarTextColor);
+        _inactiveTitleBarColor = appGroup.readEntry("inactiveBackground", _inactiveTitleBarColor);
+        _inactiveTitleBarTextColor = appGroup.readEntry("inactiveForeground", _inactiveTitleBarTextColor);
+    }
+}
+
+void Helper::installEventFilter(QApplication *app) const
+{
+    if (app) {
+        app->installEventFilter(_eventFilter);
+    }
+}
+
+void Helper::removeEventFilter(QApplication *app) const
+{
+    if (app) {
+        app->removeEventFilter(_eventFilter);
+    }
+}
+
+QColor transparentize(const QColor &color, qreal amount)
+{
+    auto clone = color;
+    clone.setAlphaF(amount);
+    return clone;
+}
+
+//____________________________________________________________________
+QColor Helper::frameOutlineColor(const QPalette &palette, bool mouseOver, bool hasFocus, qreal opacity, AnimationMode mode) const
+{
+    QColor outline(KColorUtils::mix(palette.color(QPalette::Window), palette.color(QPalette::WindowText), frameIntensityBias()));
+
+    // focus takes precedence over hover
+    if (mode == AnimationFocus) {
+        const QColor focus(focusColor(palette));
+        const QColor hover(hoverColor(palette));
+
+        if (mouseOver) {
+            outline = KColorUtils::mix(hover, focus, opacity);
+        } else {
+            outline = KColorUtils::mix(outline, focus, opacity);
+        }
+
+    } else if (hasFocus) {
+        outline = focusColor(palette);
+
+    } else if (mode == AnimationHover) {
+        const QColor hover(hoverColor(palette));
+        outline = KColorUtils::mix(outline, hover, opacity);
+
+    } else if (mouseOver) {
+        outline = hoverColor(palette);
+    }
+
+    return outline;
+}
+
+//____________________________________________________________________
+QColor Helper::focusOutlineColor(const QPalette &palette) const
+{
+    return KColorUtils::mix(focusColor(palette), palette.color(QPalette::WindowText), 0.15);
+}
+
+//____________________________________________________________________
+QColor Helper::hoverOutlineColor(const QPalette &palette) const
+{
+    return KColorUtils::mix(hoverColor(palette), palette.color(QPalette::WindowText), 0.15);
+}
+
+//____________________________________________________________________
+QColor Helper::sidePanelOutlineColor(const QPalette &palette, bool hasFocus, qreal opacity, AnimationMode mode) const
+{
+    QColor outline(palette.color(QPalette::Inactive, QPalette::Highlight));
+    const QColor &focus = palette.color(QPalette::Active, QPalette::Highlight);
+
+    if (mode == AnimationFocus) {
+        outline = KColorUtils::mix(outline, focus, opacity);
+
+    } else if (hasFocus) {
+        outline = focus;
+    }
+
+    return outline;
+}
+
+//____________________________________________________________________
+QColor Helper::frameBackgroundColor(const QPalette &palette, QPalette::ColorGroup group) const
+{
+    return KColorUtils::mix(palette.color(group, QPalette::Window), palette.color(group, QPalette::Base), Metrics::Blend_Value);
+}
+
+//____________________________________________________________________
+QColor Helper::arrowColor(const QPalette &palette, QPalette::ColorGroup group, QPalette::ColorRole role) const
+{
+    switch (role) {
+    case QPalette::Text:
+        return KColorUtils::mix(palette.color(group, QPalette::Text), palette.color(group, QPalette::Base), arrowShade);
+    case QPalette::WindowText:
+        return KColorUtils::mix(palette.color(group, QPalette::WindowText), palette.color(group, QPalette::Window), arrowShade);
+    case QPalette::ButtonText:
+        return KColorUtils::mix(palette.color(group, QPalette::ButtonText), palette.color(group, QPalette::Button), arrowShade);
+    default:
+        return palette.color(group, role);
+    }
+}
+
+//____________________________________________________________________
+QColor Helper::arrowColor(const QPalette &palette, bool mouseOver, bool hasFocus, qreal opacity, AnimationMode mode) const
+{
+    QColor outline(arrowColor(palette, QPalette::WindowText));
+    if (mode == AnimationHover) {
+        const QColor focus(focusColor(palette));
+        const QColor hover(hoverColor(palette));
+        if (hasFocus) {
+            outline = KColorUtils::mix(focus, hover, opacity);
+        } else {
+            outline = KColorUtils::mix(outline, hover, opacity);
+        }
+
+    } else if (mouseOver) {
+        outline = hoverColor(palette);
+
+    } else if (mode == AnimationFocus) {
+        const QColor focus(focusColor(palette));
+        outline = KColorUtils::mix(outline, focus, opacity);
+
+    } else if (hasFocus) {
+        outline = focusColor(palette);
+    }
+
+    return outline;
+}
+
+//____________________________________________________________________
+QColor Helper::sliderOutlineColor(const QPalette &palette, bool mouseOver, bool hasFocus, qreal opacity, AnimationMode mode) const
+{
+    QColor outline(KColorUtils::mix(palette.color(QPalette::Button), palette.color(QPalette::ButtonText), frameIntensityBias()));
+
+    // hover takes precedence over focus
+    if (mode == AnimationHover) {
+        const QColor hover(hoverColor(palette));
+        const QColor focus(focusColor(palette));
+        if (hasFocus) {
+            outline = KColorUtils::mix(focus, hover, opacity);
+        } else {
+            outline = KColorUtils::mix(outline, hover, opacity);
+        }
+
+    } else if (mouseOver) {
+        outline = hoverColor(palette);
+
+    } else if (mode == AnimationFocus) {
+        const QColor focus(focusColor(palette));
+        outline = KColorUtils::mix(outline, focus, opacity);
+
+    } else if (hasFocus) {
+        outline = focusColor(palette);
+    }
+
+    return outline;
+}
+
+//____________________________________________________________________
+QColor Helper::scrollBarHandleColor(const QPalette &palette, bool mouseOver, bool hasFocus, qreal opacity, AnimationMode mode) const
+{
+    QColor color(alphaColor(palette.color(QPalette::WindowText), 0.5));
+
+    // hover takes precedence over focus
+    if (mode == AnimationHover) {
+        const QColor hover(hoverColor(palette));
+        const QColor focus(focusColor(palette));
+        if (hasFocus) {
+            color = KColorUtils::mix(focus, hover, opacity);
+        } else {
+            color = KColorUtils::mix(color, hover, opacity);
+        }
+
+    } else if (mouseOver) {
+        color = hoverColor(palette);
+
+    } else if (mode == AnimationFocus) {
+        const QColor focus(focusColor(palette));
+        color = KColorUtils::mix(color, focus, opacity);
+
+    } else if (hasFocus) {
+        color = focusColor(palette);
+    }
+
+    return color;
+}
+
+//______________________________________________________________________________
+QColor Helper::checkBoxIndicatorColor(const QPalette &palette, bool mouseOver, bool active, qreal opacity, AnimationMode mode) const
+{
+    QColor color(KColorUtils::mix(palette.color(QPalette::Window), palette.color(QPalette::WindowText), 0.6));
+    if (mode == AnimationHover) {
+        const QColor focus(focusColor(palette));
+        const QColor hover(hoverColor(palette));
+        if (active) {
+            color = KColorUtils::mix(focus, hover, opacity);
+        } else {
+            color = KColorUtils::mix(color, hover, opacity);
+        }
+
+    } else if (mouseOver) {
+        color = hoverColor(palette);
+
+    } else if (active) {
+        color = focusColor(palette);
+    }
+
+    return color;
+}
+
+//______________________________________________________________________________
+QColor Helper::separatorColor(const QPalette &palette) const
+{
+    return KColorUtils::mix(palette.color(QPalette::Window), palette.color(QPalette::WindowText), frameIntensityBias());
+}
+
+//______________________________________________________________________________
+QPalette Helper::disabledPalette(const QPalette &source, qreal ratio) const
+{
+    QPalette copy(source);
+
+    const QList<QPalette::ColorRole> roles =
+        {QPalette::Window, QPalette::Highlight, QPalette::WindowText, QPalette::ButtonText, QPalette::Text, QPalette::Button};
+    for (const QPalette::ColorRole &role : roles) {
+        copy.setColor(role, KColorUtils::mix(source.color(QPalette::Active, role), source.color(QPalette::Disabled, role), 1.0 - ratio));
+    }
+
+    return copy;
+}
+
+//____________________________________________________________________
+QColor Helper::alphaColor(QColor color, qreal alpha) const
+{
+    if (alpha >= 0 && alpha < 1.0) {
+        color.setAlphaF(alpha * color.alphaF());
+    }
+    return color;
+}
+
+//______________________________________________________________________________
+void Helper::renderDebugFrame(QPainter *painter, const QRectF &rect) const
+{
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing);
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(Qt::red);
+    painter->drawRect(strokedRect(rect));
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderFocusRect(QPainter *painter, const QRectF &rect, const QBrush &brush, const QColor &outline, Sides sides) const
+{
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing);
+    painter->setBrush(brush);
+
+    if (!(outline.isValid() && sides)) {
+        painter->setPen(Qt::NoPen);
+        painter->drawRect(rect);
+
+    } else {
+        painter->setClipRect(rect);
+
+        QRectF copy(strokedRect(rect));
+
+        const qreal radius(frameRadius(PenWidth::Frame));
+        if (!(sides & SideTop)) {
+            copy.adjust(0, -radius, 0, 0);
+        }
+        if (!(sides & SideBottom)) {
+            copy.adjust(0, 0, 0, radius);
+        }
+        if (!(sides & SideLeft)) {
+            copy.adjust(-radius, 0, 0, 0);
+        }
+        if (!(sides & SideRight)) {
+            copy.adjust(0, 0, radius, 0);
+        }
+
+        painter->setPen(outline);
+        // painter->setBrush( Qt::NoBrush );
+        painter->drawRoundedRect(copy, radius, radius);
+    }
+
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderFocusLine(QPainter *painter, const QRectF &rect, const QColor &color) const
+{
+    if (!color.isValid()) {
+        return;
+    }
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(color);
+
+    painter->translate(0, 2);
+    painter->drawLine(rect.bottomLeft(), rect.bottomRight());
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderFrameWithSides(QPainter *painter, const QRectF &rect, const QColor &color, Qt::Edges edges, const QColor &outline) const
+{
+    painter->save();
+
+    painter->setRenderHint(QPainter::Antialiasing);
+
+    QRectF frameRect(rect);
+
+    // set brush
+    painter->setBrush(color);
+    painter->setPen(Qt::NoPen);
+
+    // render
+    painter->drawRect(frameRect);
+
+    // set brush again
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(outline);
+
+    // manually apply the effects of StrokedRect here but only to the edges with a frame
+    if (edges & Qt::LeftEdge) {
+        frameRect.adjust(0.5, 0.0, 0.0, 0.0);
+    }
+    if (edges & Qt::RightEdge) {
+        frameRect.adjust(0.0, 0, -0.5, 0.0);
+    }
+    if (edges & Qt::TopEdge) {
+        frameRect.adjust(0.0, 0.5, 0.0, 0.0);
+    }
+    if (edges & Qt::BottomEdge) {
+        frameRect.adjust(0.0, 0.0, 0.0, -0.5);
+    }
+
+    // draw lines
+    if (edges & Qt::LeftEdge) {
+        painter->drawLine(QLineF(frameRect.topLeft(), frameRect.bottomLeft()));
+    }
+    if (edges & Qt::RightEdge) {
+        painter->drawLine(QLineF(frameRect.topRight(), frameRect.bottomRight()));
+    }
+    if (edges & Qt::TopEdge) {
+        painter->drawLine(QLineF(frameRect.topLeft(), frameRect.topRight()));
+    }
+    if (edges & Qt::BottomEdge) {
+        painter->drawLine(QLineF(frameRect.bottomLeft(), frameRect.bottomRight()));
+    }
+
+    painter->restore();
+}
+
+//______________________________________________________________________________
+// Platinum Neue surfaces
+bool Helper::isDarkPalette(const QPalette &palette) const
+{
+    return palette.color(QPalette::Window).lightnessF() < 0.5;
+}
+
+QColor Helper::controlLineColor(const QPalette &palette) const
+{
+    return KColorUtils::mix(palette.color(QPalette::Window), palette.color(QPalette::WindowText), 0.5);
+}
+
+QColor Helper::tabLineColor(const QPalette &palette) const
+{
+    return KColorUtils::mix(palette.color(QPalette::Window), controlLineColor(palette), 0.7);
+}
+
+QColor Helper::insetTopColor(const QPalette &palette) const
+{
+    return isDarkPalette(palette) ? QColor(20, 19, 18) : KColorUtils::mix(palette.color(QPalette::Window), palette.color(QPalette::WindowText), 0.62);
+}
+
+QColor Helper::sunkenColor(const QPalette &palette) const
+{
+    const QColor window = palette.color(QPalette::Window);
+    return isDarkPalette(palette) ? KColorUtils::mix(window, Qt::black, 0.2) : KColorUtils::mix(window, palette.color(QPalette::WindowText), 0.06);
+}
+
+QColor Helper::bevelHighlight(const QPalette &palette) const
+{
+    return isDarkPalette(palette) ? QColor(255, 255, 255, 15) : QColor(255, 255, 255, 242);
+}
+
+QColor Helper::bevelShade(const QPalette &palette) const
+{
+    return isDarkPalette(palette) ? QColor(0, 0, 0, 102) : QColor(40, 36, 30, 31);
+}
+
+void Helper::renderRaised(QPainter *painter, const QRectF &rect, const QPalette &palette, const QColor &fill, const QColor &border, qreal radius, bool castShadow) const
+{
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    QRectF r = strokedRect(castShadow ? rect.adjusted(0, 0, 0, -1) : rect);
+    radius = std::min({radius, r.width() / 2, r.height() / 2});
+
+    if (castShadow) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(bevelShade(palette));
+        painter->drawRoundedRect(r.translated(0, 1).adjusted(-0.5, -0.5, 0.5, 0.5), radius, radius);
+    }
+
+    painter->setPen(border.isValid() ? QPen(border, PenWidth::Frame) : QPen(Qt::NoPen));
+    painter->setBrush(fill);
+    painter->drawRoundedRect(r, radius, radius);
+
+    // lit from above
+    if (r.width() > 2 * radius + 2) {
+        painter->setPen(QPen(fill.alpha() == 255 && fill.lightnessF() < 0.35 && !isDarkPalette(palette) ? QColor(255, 255, 255, 50) : bevelHighlight(palette), 1));
+        painter->drawLine(QPointF(r.left() + radius, r.top() + 1), QPointF(r.right() - radius, r.top() + 1));
+    }
+    painter->restore();
+}
+
+QColor Helper::pressedColor(const QPalette &palette) const
+{
+    const QColor window = palette.color(QPalette::Window);
+    return isDarkPalette(palette) ? KColorUtils::mix(window, Qt::black, 0.38) : KColorUtils::mix(window, palette.color(QPalette::WindowText), 0.15);
+}
+
+void Helper::renderPressed(QPainter *painter, const QRectF &rect, const QPalette &palette, qreal radius) const
+{
+    // pushed in: a darker face, a firmer edge, and a two-step shadow under the top edge (light from above
+    // no longer reaches the top of the face). The lit top line of a raised button is gone.
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    const QRectF r = strokedRect(rect);
+    radius = std::min({radius, r.width() / 2, r.height() / 2});
+    const bool dark = isDarkPalette(palette);
+    const QColor line = controlLineColor(palette);
+    const QColor edge = dark ? KColorUtils::mix(line, Qt::black, 0.35) : KColorUtils::mix(line, palette.color(QPalette::WindowText), 0.25);
+
+    painter->setPen(QPen(edge, PenWidth::Frame));
+    painter->setBrush(pressedColor(palette));
+    painter->drawRoundedRect(r, radius, radius);
+
+    if (r.width() > 2 * radius + 2 && r.height() > 6) {
+        QPainterPath clip;
+        clip.addRoundedRect(r.adjusted(0.5, 0.5, -0.5, -0.5), std::max<qreal>(radius - 0.5, 0), std::max<qreal>(radius - 0.5, 0));
+        painter->setClipPath(clip);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(QColor(0, 0, 0, dark ? 110 : 46));
+        painter->drawRect(QRectF(r.left(), r.top() + 0.5, r.width(), 1));
+        painter->setBrush(QColor(0, 0, 0, dark ? 50 : 20));
+        painter->drawRect(QRectF(r.left(), r.top() + 1.5, r.width(), 1));
+        // and a faint one down the left side
+        painter->setBrush(QColor(0, 0, 0, dark ? 40 : 16));
+        painter->drawRect(QRectF(r.left() + 0.5, r.top() + 2.5, 1, r.height() - 3));
+    }
+    painter->restore();
+}
+
+void Helper::renderInsetWell(QPainter *painter, const QRectF &rect, const QPalette &palette, const QColor &fill, qreal radius, bool topEdge, qreal edgeStrength) const
+{
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    const QRectF r = strokedRect(rect);
+    radius = std::min({radius, r.width() / 2, r.height() / 2});
+
+    const QColor window = palette.color(QPalette::Window);
+    painter->setPen(QPen(KColorUtils::mix(window, controlLineColor(palette), edgeStrength), PenWidth::Frame));
+    painter->setBrush(fill);
+    painter->drawRoundedRect(r, radius, radius);
+
+    if (topEdge && r.width() > 2 * radius + 2) {
+        // darker top edge and a soft inner shadow: the surface dips below the window
+        painter->setPen(QPen(KColorUtils::mix(window, insetTopColor(palette), edgeStrength), 1));
+        painter->drawLine(QPointF(r.left() + radius, r.top()), QPointF(r.right() - radius, r.top()));
+        painter->setPen(QPen(bevelShade(palette), 1));
+        painter->drawLine(QPointF(r.left() + 1, r.top() + 1), QPointF(r.right() - 1, r.top() + 1));
+    }
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderFrame(QPainter *painter, const QRectF &rect, const QColor &color, const QColor &outline) const
+{
+    painter->setRenderHint(QPainter::Antialiasing);
+
+    QRectF frameRect(rect);
+    qreal radius(frameRadius(PenWidth::NoPen));
+
+    // set pen
+    if (outline.isValid()) {
+        painter->setPen(outline);
+        frameRect = strokedRect(frameRect);
+        radius = frameRadiusForNewPenWidth(radius, PenWidth::Frame);
+
+    } else {
+        painter->setPen(Qt::NoPen);
+    }
+
+    // set brush
+    if (color.isValid()) {
+        painter->setBrush(color);
+    } else {
+        painter->setBrush(Qt::NoBrush);
+    }
+
+    // render
+    painter->drawRoundedRect(frameRect, radius, radius);
+}
+
+//______________________________________________________________________________
+void Helper::renderSidePanelFrame(QPainter *painter, const QRectF &rect, const QColor &outline, Side side) const
+{
+    // check color
+    if (!outline.isValid()) {
+        return;
+    }
+
+    // adjust rect
+    QRectF frameRect(strokedRect(rect));
+
+    // setup painter
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->setPen(outline);
+
+    // render
+    switch (side) {
+    default:
+    case SideLeft:
+        painter->drawLine(frameRect.topRight(), frameRect.bottomRight());
+        break;
+
+    case SideTop:
+        painter->drawLine(frameRect.topLeft(), frameRect.topRight());
+        break;
+
+    case SideRight:
+        painter->drawLine(frameRect.topLeft(), frameRect.bottomLeft());
+        break;
+
+    case SideBottom:
+        painter->drawLine(frameRect.bottomLeft(), frameRect.bottomRight());
+        break;
+
+    case AllSides: {
+        const qreal radius(frameRadius(PenWidth::Frame));
+        painter->drawRoundedRect(frameRect, radius, radius);
+        break;
+    }
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderMenuFrame(QPainter *painter, const QRectF &rect, const QColor &color, const QColor &outline, bool roundCorners, Qt::Edges seamlessEdges)
+    const
+{
+    painter->save();
+
+    // set brush
+    if (color.isValid()) {
+        painter->setBrush(color);
+    } else {
+        painter->setBrush(Qt::NoBrush);
+    }
+
+    // We simulate being able to independently adjust corner radii by
+    // setting a clip region and then extending the rectangle beyond it.
+    if (seamlessEdges != Qt::Edges()) {
+        painter->setClipRect(rect);
+    }
+
+    if (roundCorners) {
+        painter->setRenderHint(QPainter::Antialiasing);
+        QRectF frameRect(rect);
+
+        qreal radius(Metrics::Frame_FrameRadius);
+
+        frameRect.adjust( //
+            seamlessEdges.testFlag(Qt::LeftEdge) ? -radius : 0,
+            seamlessEdges.testFlag(Qt::TopEdge) ? -radius : 0,
+            seamlessEdges.testFlag(Qt::RightEdge) ? radius : 0,
+            seamlessEdges.testFlag(Qt::BottomEdge) ? radius : 0);
+
+        // set pen
+        if (outline.isValid()) {
+            painter->setPen(outline);
+            frameRect = strokedRect(frameRect);
+            radius = frameRadiusForNewPenWidth(radius, PenWidth::Frame);
+
+        } else {
+            painter->setPen(Qt::NoPen);
+        }
+
+        // render
+        painter->drawRoundedRect(frameRect, radius, radius);
+
+    } else {
+        painter->setRenderHint(QPainter::Antialiasing, false);
+        QRectF frameRect(rect);
+
+        frameRect.adjust( //
+            seamlessEdges.testFlag(Qt::LeftEdge) ? 1 : 0,
+            seamlessEdges.testFlag(Qt::TopEdge) ? 1 : 0,
+            seamlessEdges.testFlag(Qt::RightEdge) ? -1 : 0,
+            seamlessEdges.testFlag(Qt::BottomEdge) ? -1 : 0);
+
+        if (outline.isValid()) {
+            painter->setPen(outline);
+            frameRect.adjust(0, 0, -1, -1);
+
+        } else {
+            painter->setPen(Qt::NoPen);
+        }
+
+        painter->drawRect(frameRect);
+    }
+
+    painter->restore();
+}
+
+QRegion Helper::menuFrameRegion(const QMenu *widget)
+{
+    if (!widget) {
+        return {};
+    }
+
+    const bool hasAlpha(hasAlphaChannel(widget));
+    const auto seamlessEdges = menuSeamlessEdges(widget);
+    const auto roundCorners = hasAlpha;
+
+    if (roundCorners) {
+        QRectF frameRect(widget->rect());
+
+        qreal radius(Metrics::Frame_FrameRadius);
+
+        frameRect.adjust( //
+            seamlessEdges.testFlag(Qt::LeftEdge) ? -radius : 0,
+            seamlessEdges.testFlag(Qt::TopEdge) ? -radius : 0,
+            seamlessEdges.testFlag(Qt::RightEdge) ? radius : 0,
+            seamlessEdges.testFlag(Qt::BottomEdge) ? radius : 0);
+
+        // outline is always valid/drawn
+        frameRect = strokedRect(frameRect);
+        radius = frameRadiusForNewPenWidth(radius, PenWidth::Frame);
+
+        QPainterPath path;
+        path.addRoundedRect(frameRect, radius, radius);
+        return QRegion(path.toFillPolygon().toPolygon()).intersected(widget->rect());
+    }
+
+    return QRegion(widget->rect());
+}
+
+//______________________________________________________________________________
+void Helper::renderButtonFrame(QPainter *painter,
+                               const QRectF &rect,
+                               const QPalette &palette,
+                               const QHash<QByteArray, bool> &stateProperties,
+                               qreal bgAnimation,
+                               qreal penAnimation) const
+{
+    bool enabled = stateProperties.value("enabled", true);
+    bool visualFocus = stateProperties.value("visualFocus");
+    bool hovered = stateProperties.value("hovered");
+    bool down = stateProperties.value("down");
+    bool checked = stateProperties.value("checked");
+    bool flat = stateProperties.value("flat");
+    bool defaultButton = stateProperties.value("defaultButton");
+    bool hasNeutralHighlight = stateProperties.value("hasNeutralHighlight");
+    bool isActiveWindow = stateProperties.value("isActiveWindow");
+    const bool roundButton = stateProperties.value("roundButton");
+
+    // don't render background if flat and not hovered, down, checked, or given visual focus.
+    // (Decided on state alone: Qt Quick controls report animation opacity 0 rather than "invalid", which
+    // made flat QML buttons, e.g. the theme-variant arrows in System Settings, always draw a raised face.)
+    if (flat && !(hovered || down || checked || visualFocus)) {
+        return;
+    }
+
+    Q_UNUSED(bgAnimation)
+    Q_UNUSED(penAnimation)
+    Q_UNUSED(hasNeutralHighlight)
+
+    const qreal radius = roundButton ? std::max(rect.width(), rect.height()) / 2 : Metrics::Frame_FrameRadius;
+    const QColor line = controlLineColor(palette);
+    const QColor focus = focusColor(palette);
+    const bool sunkenLook = (down && enabled) || checked;
+
+    if (!enabled) {
+        if (!flat) {
+            renderRaised(painter, rect, palette, palette.color(QPalette::Window), separatorColor(palette), radius, false);
+        }
+        return;
+    }
+
+    if (sunkenLook) {
+        // pressed, or a toggle that is on: pushed into the window
+        renderPressed(painter, rect, palette, radius);
+    } else if (defaultButton && isActiveWindow && !flat) {
+        // the default button is the only filled control in a window
+        const QColor accent = palette.color(QPalette::Active, QPalette::Highlight);
+        QColor fill = hovered ? accent.lighter(108) : accent;
+        renderRaised(painter, rect, palette, fill, KColorUtils::mix(accent, Qt::black, 0.3), radius, true);
+    } else {
+        QColor fill = palette.color(QPalette::Button);
+        if (hovered) {
+            fill = fill.lighter(isDarkPalette(palette) ? 112 : 102);
+        }
+        // flat (toolbar) buttons drop the cast shadow so their edges align with neighbouring fields
+        renderRaised(painter, rect, palette, fill, visualFocus ? focus : line, radius, !flat);
+    }
+
+    if (visualFocus && (sunkenLook || defaultButton)) {
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setPen(QPen(focus, 1));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(strokedRect(rect).adjusted(-0.5, -0.5, 0.5, 0.5).adjusted(1, 1, -1, -1), radius, radius);
+        painter->restore();
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderToolBoxFrame(QPainter *painter, const QRectF &rect, int tabWidth, const QColor &outline) const
+{
+    if (!outline.isValid()) {
+        return;
+    }
+
+    // round radius
+    const qreal radius(frameRadius(PenWidth::Frame));
+    const QSizeF cornerSize(2 * radius, 2 * radius);
+
+    // if rect - tabwidth is even, need to increase tabWidth by 1 unit
+    // for anti aliasing
+    if (!((rect.toRect().width() - tabWidth) % 2)) {
+        ++tabWidth;
+    }
+
+    // adjust rect for antialiasing
+    QRectF baseRect(strokedRect(rect));
+
+    // create path
+    QPainterPath path;
+    path.moveTo(0, baseRect.height() - 1);
+    path.lineTo((baseRect.width() - tabWidth) / 2 - radius, baseRect.height() - 1);
+    path.arcTo(QRectF(QPointF((baseRect.width() - tabWidth) / 2 - 2 * radius, baseRect.height() - 1 - 2 * radius), cornerSize), 270, 90);
+    path.lineTo((baseRect.width() - tabWidth) / 2, radius);
+    path.arcTo(QRectF(QPointF((baseRect.width() - tabWidth) / 2, 0), cornerSize), 180, -90);
+    path.lineTo((baseRect.width() + tabWidth) / 2 - 1 - radius, 0);
+    path.arcTo(QRectF(QPointF((baseRect.width() + tabWidth) / 2 - 1 - 2 * radius, 0), cornerSize), 90, -90);
+    path.lineTo((baseRect.width() + tabWidth) / 2 - 1, baseRect.height() - 1 - radius);
+    path.arcTo(QRectF(QPointF((baseRect.width() + tabWidth) / 2 - 1, baseRect.height() - 1 - 2 * radius), cornerSize), 180, 90);
+    path.lineTo(baseRect.width() - 1, baseRect.height() - 1);
+
+    // render
+    painter->setRenderHints(QPainter::Antialiasing);
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(outline);
+    painter->translate(baseRect.topLeft());
+    painter->drawPath(path);
+}
+
+//______________________________________________________________________________
+void Helper::renderTabWidgetFrame(QPainter *painter, const QRectF &rect, const QColor &color, const QColor &outline, Corners corners) const
+{
+    painter->setRenderHint(QPainter::Antialiasing);
+
+    QRectF frameRect(rect.adjusted(1, 1, -1, -1));
+    qreal radius(frameRadius(PenWidth::NoPen));
+
+    // set pen
+    if (outline.isValid()) {
+        painter->setPen(outline);
+        frameRect = strokedRect(frameRect);
+        radius = frameRadiusForNewPenWidth(radius, PenWidth::Frame);
+
+    } else {
+        painter->setPen(Qt::NoPen);
+    }
+
+    // set brush
+    if (color.isValid()) {
+        painter->setBrush(color);
+    } else {
+        painter->setBrush(Qt::NoBrush);
+    }
+
+    // render
+    QPainterPath path(roundedPath(frameRect, corners, radius));
+    painter->drawPath(path);
+}
+
+//______________________________________________________________________________
+void Helper::renderSeparator(QPainter *painter, const QRectF &rect, const QColor &color, bool vertical) const
+{
+    painter->setRenderHint(QPainter::Antialiasing, false);
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(color);
+
+    if (vertical) {
+        painter->translate(rect.width() / 2, 0);
+        painter->drawLine(rect.topLeft(), rect.bottomLeft());
+
+    } else {
+        painter->translate(0, rect.height() / 2);
+        painter->drawLine(rect.topLeft(), rect.topRight());
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderCheckBoxBackground(QPainter *painter,
+                                      const QRectF &rect,
+                                      const QPalette &palette,
+                                      CheckBoxState state,
+                                      bool neutalHighlight,
+                                      bool sunken,
+                                      qreal animation) const
+{
+    const QRectF frameRect(rect.adjusted(2, 2, -2, -2));
+    const qreal radius = Metrics::CheckBox_Radius;
+    const bool on = state == CheckOn || state == CheckPartial || (state == CheckAnimated && animation > 0.5);
+    if (on) {
+        const QColor accent = neutalHighlight ? neutralText(palette) : palette.color(QPalette::Highlight);
+        renderRaised(painter, frameRect, palette, accent, KColorUtils::mix(accent, Qt::black, 0.3), radius, false);
+    } else {
+        renderInsetWell(painter, frameRect, palette, sunken ? sunkenColor(palette) : palette.color(QPalette::Base), radius);
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderCheckBox(QPainter *painter,
+                            const QRectF &rect,
+                            const QPalette &palette,
+                            bool mouseOver,
+                            CheckBoxState state,
+                            CheckBoxState target,
+                            bool neutalHighlight,
+                            bool sunken,
+                            qreal animation,
+                            qreal hoverAnimation) const
+{
+    Q_UNUSED(sunken)
+
+    // setup painter
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // copy rect and radius
+    QRectF frameRect(rect);
+    frameRect.adjust(2, 2, -2, -2);
+
+    if (false && mouseOver) {
+        painter->save();
+
+        if (hoverAnimation != AnimationData::OpacityInvalid) {
+            painter->setOpacity(hoverAnimation);
+        }
+
+        painter->setPen(QPen(neutalHighlight ? neutralText(palette).lighter() : focusColor(palette), PenWidth::Frame));
+        painter->setBrush(Qt::NoBrush);
+
+        painter->drawRoundedRect(frameRect.adjusted(0.5, 0.5, -0.5, -0.5), Metrics::CheckBox_Radius, Metrics::CheckBox_Radius);
+
+        painter->restore();
+    }
+
+    // check
+    auto leftPoint = frameRect.center();
+    leftPoint.setX(frameRect.left() + 4);
+
+    auto bottomPoint = frameRect.center();
+    bottomPoint.setX(bottomPoint.x() - 1);
+    bottomPoint.setY(frameRect.bottom() - 5);
+
+    auto rightPoint = frameRect.center();
+    rightPoint.setX(rightPoint.x() + 4.5);
+    rightPoint.setY(frameRect.top() + 5.5);
+
+    QPainterPath path;
+    path.moveTo(leftPoint);
+    path.lineTo(bottomPoint);
+    path.lineTo(rightPoint);
+
+    // dots
+    auto centerDot = QRectF(frameRect.center(), QSize(2, 2));
+    centerDot.adjust(-1, -1, -1, -1);
+    auto leftDot = centerDot.adjusted(-4, 0, -4, 0);
+    auto rightDot = centerDot.adjusted(4, 0, 4, 0);
+
+    painter->setPen(Qt::transparent);
+    painter->setBrush(Qt::transparent);
+
+    auto checkPen = QPen(palette.highlightedText(), PenWidth::Frame * 2);
+    checkPen.setJoinStyle(Qt::MiterJoin);
+
+    switch (state) {
+    case CheckOff:
+        break;
+    case CheckOn:
+        painter->setPen(checkPen);
+        painter->drawPath(path);
+        break;
+    case CheckPartial:
+        painter->setBrush(palette.highlightedText());
+        painter->drawRect(leftDot);
+        painter->drawRect(centerDot);
+        painter->drawRect(rightDot);
+        break;
+    case CheckAnimated:
+        checkPen.setDashPattern({path.length() * animation, path.length()});
+
+        switch (target) {
+        case CheckOff:
+            break;
+        case CheckOn:
+            painter->setPen(checkPen);
+            painter->drawPath(path);
+            break;
+        case CheckPartial:
+            if (animation >= 3.0 / 3.0) {
+                painter->drawRect(rightDot);
+            }
+            if (animation >= 2.0 / 3.0) {
+                painter->drawRect(centerDot);
+            }
+            if (animation >= 1.0 / 3.0) {
+                painter->drawRect(leftDot);
+            }
+            break;
+        case CheckAnimated:
+            break;
+        }
+        break;
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderRadioButtonBackground(QPainter *painter,
+                                         const QRectF &rect,
+                                         const QPalette &palette,
+                                         RadioButtonState state,
+                                         bool neutalHighlight,
+                                         bool sunken,
+                                         qreal animation) const
+{
+    const QRectF frameRect(rect.adjusted(2, 2, -2, -2));
+    const qreal radius = frameRect.width() / 2;
+    const bool on = state == RadioOn || (state == RadioAnimated && animation > 0.5);
+    if (on) {
+        const QColor accent = neutalHighlight ? neutralText(palette) : palette.color(QPalette::Highlight);
+        renderRaised(painter, frameRect, palette, accent, KColorUtils::mix(accent, Qt::black, 0.3), radius, false);
+    } else {
+        renderInsetWell(painter, frameRect, palette, sunken ? sunkenColor(palette) : palette.color(QPalette::Base), radius, false);
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderRadioButton(QPainter *painter,
+                               const QRectF &rect,
+                               const QPalette &palette,
+                               bool mouseOver,
+                               RadioButtonState state,
+                               bool neutralHighlight,
+                               bool sunken,
+                               qreal animation,
+                               qreal animationHover) const
+{
+    Q_UNUSED(sunken)
+
+    // copy rect
+    QRectF frameRect(rect);
+    frameRect.adjust(1, 1, -1, -1);
+
+    if (false && mouseOver) {
+        painter->save();
+
+        if (animationHover != AnimationData::OpacityInvalid) {
+            painter->setOpacity(animationHover);
+        }
+
+        painter->setPen(QPen(neutralHighlight ? neutralText(palette).lighter() : focusColor(palette), PenWidth::Frame));
+        painter->setBrush(Qt::NoBrush);
+
+        const QRectF contentRect(frameRect.adjusted(1, 1, -1, -1).adjusted(0.5, 0.5, -0.5, -0.5));
+        painter->drawEllipse(contentRect);
+
+        painter->restore();
+    }
+
+    painter->setBrush(palette.highlightedText());
+    painter->setPen(Qt::NoPen);
+
+    const int radius = (std::min(frameRect.width(), frameRect.height()) - 12) / 2;
+    const QPointF center = frameRect.center();
+
+    // mark
+    switch (state) {
+    case RadioOn:
+        painter->drawEllipse(center, radius, radius);
+        break;
+    case RadioAnimated: {
+        const qreal animationRadius = radius * animation;
+        painter->drawEllipse(center, animationRadius, animationRadius);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderSliderGroove(QPainter *painter, const QRectF &rect, const QColor &fg, const QColor &bg) const
+{
+    if (!fg.isValid()) {
+        return;
+    }
+    const qreal radius = 0.5 * Metrics::Slider_GrooveThickness;
+    if (fg.alphaF() < 1.0) {
+        QColor text(fg);
+        text.setAlphaF(1.0);
+        QPalette palette;
+        palette.setColor(QPalette::Window, bg);
+        palette.setColor(QPalette::WindowText, text);
+        renderInsetWell(painter, rect, palette, sunkenColor(palette), radius);
+    } else {
+        // the filled part sits inside the well's border, so the bar keeps one continuous outline
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(fg);
+        const QRectF inner = QRectF(rect).adjusted(PenWidth::Frame, PenWidth::Frame, -PenWidth::Frame, -PenWidth::Frame);
+        const qreal r = std::max<qreal>(0, std::min(radius - PenWidth::Frame, std::min(inner.width(), inner.height()) / 2));
+        if (inner.width() > 0 && inner.height() > 0) {
+            painter->drawRoundedRect(inner, r, r);
+        }
+        painter->restore();
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderDialGroove(QPainter *painter, const QRectF &rect, const QColor &fg, const QColor &bg, qreal first, qreal last) const
+{
+    // setup painter
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    const QRectF baseRect(rect);
+
+    // content
+    if (fg.isValid()) {
+        const qreal penWidth(Metrics::Slider_GrooveThickness);
+        const QRectF grooveRect(rect.adjusted(penWidth / 2, penWidth / 2, -penWidth / 2, -penWidth / 2));
+
+        // setup angles
+        const int angleStart(first * 180 * 16 / M_PI);
+        const int angleSpan((last - first) * 180 * 16 / M_PI);
+        const QPen bgPen(fg, penWidth, Qt::SolidLine, Qt::RoundCap);
+        const QPen fgPen(transparentize(KColorUtils::overlayColors(bg, alphaColor(fg, 0.5)), frameIntensityBias()), penWidth - 2, Qt::SolidLine, Qt::RoundCap);
+
+        // setup pen
+        if (angleSpan != 0) {
+            painter->setPen(bgPen);
+            painter->setBrush(Qt::NoBrush);
+            painter->drawArc(grooveRect, angleStart, angleSpan);
+            painter->setPen(fgPen);
+            painter->drawArc(grooveRect, angleStart, angleSpan);
+        }
+    }
+}
+
+//______________________________________________________________________________
+void Helper::initSliderStyleOption(const QSlider *slider, QStyleOptionSlider *option) const
+{
+    option->initFrom(slider);
+    option->subControls = QStyle::SC_None;
+    option->activeSubControls = QStyle::SC_None;
+    option->orientation = slider->orientation();
+    option->maximum = slider->maximum();
+    option->minimum = slider->minimum();
+    option->tickPosition = slider->tickPosition();
+    option->tickInterval = slider->tickInterval();
+    option->upsideDown = (slider->orientation() == Qt::Horizontal) //
+        ? (slider->invertedAppearance() != (option->direction == Qt::RightToLeft))
+        : (!slider->invertedAppearance());
+    option->direction = Qt::LeftToRight; // we use the upsideDown option instead
+    option->sliderPosition = slider->sliderPosition();
+    option->sliderValue = slider->value();
+    option->singleStep = slider->singleStep();
+    option->pageStep = slider->pageStep();
+    if (slider->orientation() == Qt::Horizontal) {
+        option->state |= QStyle::State_Horizontal;
+    }
+    // Can't fetch activeSubControls, because it's private API
+}
+
+//______________________________________________________________________________
+QRectF Helper::pathForSliderHandleFocusFrame(QPainterPath &focusFramePath, const QRectF &rect, int hmargin, int vmargin) const
+{
+    // Mimics path and adjustments of renderSliderHandle
+    QRectF frameRect(rect);
+    frameRect.translate(hmargin, vmargin);
+    frameRect.adjust(1, 1, -1, -1);
+    frameRect = strokedRect(frameRect);
+    focusFramePath.addEllipse(frameRect);
+    frameRect.adjust(-hmargin, -vmargin, hmargin, vmargin);
+    focusFramePath.addEllipse(frameRect);
+    return frameRect;
+}
+
+//______________________________________________________________________________
+void Helper::renderSliderHandle(QPainter *painter,
+                                const QRectF &rect,
+                                const QColor &color,
+                                const QColor &outline,
+                                const QColor &shadow,
+                                bool sunken,
+                                bool rectangular,
+                                Qt::Orientation orientation) const
+{
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    if (rectangular) {
+        // Platinum Neue: a small raised block with a grip line, so the exact value is easy to read
+        const QSizeF size = orientation == Qt::Horizontal ? QSizeF(11, 18) : QSizeF(18, 11);
+        QRectF handle(QPointF(0, 0), size);
+        handle.moveCenter(rect.center());
+        handle.moveTopLeft(QPointF(std::round(handle.left()), std::round(handle.top())));
+
+        QPalette palette;
+        palette.setColor(QPalette::Window, shadow.isValid() ? color : color);
+        palette.setColor(QPalette::WindowText, outline);
+        const QColor line = outline;
+        const bool dark = color.lightnessF() < 0.5;
+        const QColor fill = sunken ? (dark ? KColorUtils::mix(color, Qt::black, 0.2) : KColorUtils::mix(color, Qt::black, 0.07)) : color;
+        renderRaised(painter, handle, palette, fill, line, Metrics::CheckBox_Radius, !sunken);
+
+        const QColor grip = KColorUtils::mix(fill, line, 0.8);
+        const QPointF c = handle.adjusted(0, 0, 0, sunken ? 0 : -1).center();
+        if (orientation == Qt::Horizontal) {
+            painter->fillRect(QRectF(std::floor(c.x()), std::round(c.y() - 4), 1, 8), grip);
+        } else {
+            painter->fillRect(QRectF(std::round(c.x() - 4), std::floor(c.y()), 8, 1), grip);
+        }
+        return;
+    }
+
+    // copy rect
+    QRectF frameRect(rect);
+    frameRect.adjust(1, 1, -1, -1);
+
+    // shadow
+    if (!sunken) {
+        renderEllipseShadow(painter, frameRect, shadow);
+    }
+
+    // set pen
+    if (outline.isValid()) {
+        painter->setPen(QPen(outline, PenWidth::Frame));
+        frameRect = strokedRect(frameRect);
+
+    } else {
+        painter->setPen(Qt::NoPen);
+    }
+
+    // set brush
+    if (color.isValid()) {
+        painter->setBrush(color);
+    } else {
+        painter->setBrush(Qt::NoBrush);
+    }
+
+    // render
+    painter->drawEllipse(frameRect);
+}
+
+//______________________________________________________________________________
+void Helper::renderProgressBarGroove(QPainter *painter, const QRectF &rect, const QColor &fg, const QColor &bg) const
+{
+    // same treatment as the slider groove: translucent = empty well, opaque = filled part
+    renderSliderGroove(painter, rect, fg, bg);
+}
+
+//______________________________________________________________________________
+void Helper::renderProgressBarBusyContents(QPainter *painter,
+                                           const QRectF &rect,
+                                           const QColor &first,
+                                           const QColor &second,
+                                           bool horizontal,
+                                           bool reverse,
+                                           int progress) const
+{
+    Q_UNUSED(horizontal)
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // inside the well's border, like the determinate fill
+    const QRectF baseRect(QRectF(rect).adjusted(PenWidth::Frame, PenWidth::Frame, -PenWidth::Frame, -PenWidth::Frame));
+    const qreal radius(0.5 * Metrics::Slider_GrooveThickness - PenWidth::Frame);
+    QPainterPath clip;
+    clip.addRoundedRect(baseRect, radius, radius);
+    painter->setClipPath(clip, Qt::IntersectClip);
+    painter->fillRect(baseRect, second);
+
+    // diagonal stripes, 6px wide every 12px, drifting slowly
+    const int period = 12;
+    const qreal h = baseRect.height();
+    int offset = (progress / 2) % period;
+    if (reverse) {
+        offset = period - offset;
+    }
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(first);
+    for (qreal x = baseRect.left() - h - period + offset; x < baseRect.right() + period; x += period) {
+        const QPointF poly[4] = {{x, baseRect.bottom()}, {x + h, baseRect.top()}, {x + h + period / 2.0, baseRect.top()}, {x + period / 2.0, baseRect.bottom()}};
+        painter->drawPolygon(poly, 4);
+    }
+    painter->setClipping(false);
+
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(KColorUtils::mix(first, Qt::black, 0.25), PenWidth::Frame));
+    painter->drawRoundedRect(baseRect, radius, radius);
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderScrollBarHandle(QPainter *painter, const QRectF &rect, const QPalette &palette, bool hovered) const
+{
+    QColor fill = palette.color(QPalette::Button);
+    if (hovered) {
+        fill = fill.lighter(isDarkPalette(palette) ? 112 : 102);
+    }
+    const QColor line = controlLineColor(palette);
+    renderRaised(painter, rect, palette, fill, line, Metrics::Frame_FrameRadius, false);
+
+    // three-line grip in the middle of the thumb
+    const bool vertical = rect.height() >= rect.width();
+    const QPointF c = rect.center();
+    const QColor grip = KColorUtils::mix(fill, line, 0.8);
+    if ((vertical ? rect.height() : rect.width()) >= 20) {
+        for (int i = -1; i <= 1; ++i) {
+            if (vertical) {
+                painter->fillRect(QRectF(std::round(c.x() - 4), std::floor(c.y()) + 2 * i, 8, 1), grip);
+            } else {
+                painter->fillRect(QRectF(std::floor(c.x()) + 2 * i, std::round(c.y() - 4), 1, 8), grip);
+            }
+        }
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderScrollBarBorder(QPainter *painter, const QRectF &rect, const QColor &color) const
+{
+    // content
+    if (color.isValid()) {
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(color);
+        painter->drawRect(rect);
+    }
+}
+
+void Helper::renderStaticTabBarTab(QPainter *painter,
+                                   const QRectF &rect,
+                                   const QPalette &palette,
+                                   const QHash<QByteArray, bool> &stateProperties,
+                                   Corners corners,
+                                   qreal animation) const
+{
+    bool enabled = stateProperties.value("enabled", true);
+    bool hovered = stateProperties.value("hovered");
+    bool selected = stateProperties.value("selected");
+    bool documentMode = stateProperties.value("documentMode");
+    bool north = stateProperties.value("north");
+    bool south = stateProperties.value("south");
+    bool west = stateProperties.value("west");
+    bool east = stateProperties.value("east");
+    bool isFirst = stateProperties.value("isFirst");
+    bool isLast = stateProperties.value("isLast");
+    bool isRightOfSelected = stateProperties.value("isRightOfSelected");
+    bool animated = animation != AnimationData::OpacityInvalid;
+    bool isQtQuickControl = stateProperties.value("isQtQuickControl");
+    bool hasAlteredBackground = stateProperties.value("hasAlteredBackground");
+    const auto baseColor = palette.color(QPalette::Base).darker(102);
+    const auto windowColor = palette.color(QPalette::Window);
+
+    // setup painter
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    QRectF frameRect = rect;
+    QColor bgBrush;
+
+    if (selected) {
+        // overlap border
+        bgBrush = windowColor;
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(bgBrush);
+        painter->drawRect(frameRect);
+
+        if (documentMode && !isQtQuickControl && !hasAlteredBackground) {
+            const auto highlightBackground = alphaColor(palette.color(QPalette::Highlight), frameIntensityBias());
+            bgBrush = highlightBackground;
+        } else {
+            bgBrush = frameBackgroundColor(palette);
+        }
+        QColor penBrush = KColorUtils::mix(bgBrush, palette.color(QPalette::WindowText), frameIntensityBias());
+        painter->setBrush(bgBrush);
+        painter->setPen(QPen(penBrush, PenWidth::Frame));
+        QRectF highlightRect = frameRect;
+        if (north || south) {
+            highlightRect.setHeight(Metrics::TabBar_ActiveEffectSize);
+        } else if (west || east) {
+            highlightRect.setWidth(Metrics::TabBar_ActiveEffectSize);
+        }
+        if (south) {
+            highlightRect.moveBottom(frameRect.bottom());
+        } else if (east) {
+            highlightRect.moveRight(frameRect.right());
+        }
+
+        auto rect = strokedRect(frameRect);
+        // don't stroke the first and last tab
+        if (isFirst) {
+            if (north || south) {
+                rect.adjust(-PenWidth::Frame, 0, 0, 0);
+            } else {
+                rect.adjust(0, -PenWidth::Frame, 0, 0);
+            }
+        }
+        if (isLast) {
+            if (north || south) {
+                rect.adjust(0, 0, PenWidth::Frame, 0);
+            } else {
+                rect.adjust(PenWidth::Frame, 0, 0, 0);
+            }
+        }
+        painter->drawRect(rect);
+        painter->setBrush(palette.color(QPalette::Highlight));
+        painter->setPen(Qt::NoPen);
+        painter->drawRect(highlightRect);
+    } else {
+        // don't overlap border
+        // Since we don't set the rectangle as strokedRect here, modify only one side of it
+        // the same amount strokedRect method would, to make it snap next to the border
+        const qreal overlap = PenWidth::Frame;
+        frameRect.adjust(west ? overlap : 0, south || north ? overlap : 0, east ? -overlap : 0, south || north ? -overlap : 0);
+
+        if (hovered) {
+            bgBrush = windowColor;
+        } else {
+            bgBrush = baseColor;
+        }
+
+        const auto hover = alphaColor(hoverColor(palette), frameIntensityBias());
+        if (animated) {
+            bgBrush = KColorUtils::mix(bgBrush, hover, animation);
+        } else if (enabled && hovered) {
+            bgBrush = hover;
+        }
+        painter->setBrush(bgBrush);
+        painter->setPen(Qt::NoPen);
+        painter->drawRect(frameRect);
+    }
+
+    if (!selected && !isRightOfSelected && !isFirst && (north || south)) {
+        auto penColor = KColorUtils::mix(baseColor, palette.color(QPalette::WindowText), frameIntensityBias());
+        QRectF lineRect = frameRect;
+        lineRect.setRight(lineRect.x() + 1);
+
+        // Back the separator with the plain tab background so neither the hover
+        // nor the active fill shows through beneath it.
+        painter->setBrush(baseColor);
+        painter->drawRect(lineRect);
+
+        // separator line, inset from the top and bottom
+        lineRect.adjust(0, 8, 0, -8);
+        painter->setBrush(penColor);
+        painter->drawRect(lineRect);
+    } else if (!selected && !isRightOfSelected && !isFirst && (east || west)) {
+        auto penColor = KColorUtils::mix(baseColor, palette.color(QPalette::WindowText), frameIntensityBias());
+        QRectF lineRect = frameRect;
+        lineRect.setBottom(lineRect.y() + 1);
+
+        // Back the separator with the plain tab background so neither the hover
+        // nor the active fill shows through beneath it.
+        painter->setBrush(baseColor);
+        painter->drawRect(lineRect);
+
+        // separator line, inset from the left and right
+        lineRect.adjust(8, 0, -8, 0);
+        painter->setBrush(penColor);
+        painter->drawRect(lineRect);
+    }
+}
+
+//______________________________________________________________________________
+void Helper::renderTabBarTab(QPainter *painter,
+                             const QRectF &rect,
+                             const QPalette &palette,
+                             const QHash<QByteArray, bool> &stateProperties,
+                             Corners corners,
+                             qreal animation) const
+{
+    Q_UNUSED(corners)
+    // Folder tabs: every tab is its own box open toward the pane. The selected tab
+    // shares the pane's raised fill and breaks through its border; the others sit
+    // a little lower, on the darker chrome.
+    const bool enabled = stateProperties.value("enabled", true);
+    const bool hovered = stateProperties.value("hovered");
+    const bool selected = stateProperties.value("selected");
+    const bool south = stateProperties.value("south");
+    const bool west = stateProperties.value("west");
+    const bool east = stateProperties.value("east");
+    const bool animated = animation != AnimationData::OpacityInvalid;
+    // the selected tab draws the shared edge; its neighbours leave it out so it is never doubled
+    const bool openRight = !selected && stateProperties.value("isLeftOfSelected");
+    const bool openLeft = !selected && stateProperties.value("isRightOfSelected");
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    // map to a local frame where the far edge is the top and the pane is below
+    QRectF local(rect);
+    QTransform t;
+    if (south) {
+        t = QTransform(1, 0, 0, -1, 0, rect.top() + rect.bottom());
+    } else if (west) {
+        t = QTransform(0, 1, 1, 0, rect.left(), rect.top());
+        local = QRectF(0, 0, rect.height(), rect.width());
+    } else if (east) {
+        t = QTransform(0, 1, -1, 0, rect.right(), rect.top());
+        local = QRectF(0, 0, rect.height(), rect.width());
+    }
+    painter->setTransform(t, true);
+
+    const QColor line = enabled ? tabLineColor(palette) : KColorUtils::mix(palette.color(QPalette::Window), tabLineColor(palette), 0.6);
+    const QColor raised = palette.color(QPalette::Button);
+    const qreal radius = Metrics::Frame_FrameRadius - 0.5;
+
+    QRectF box = selected ? local : local.adjusted(0, 2, 0, -1);
+    QColor fill = raised;
+    if (!selected) {
+        fill = sunkenColor(palette);
+        const QColor hover = KColorUtils::mix(fill, raised, 0.6);
+        if (animated) {
+            fill = KColorUtils::mix(fill, hover, animation);
+        } else if (enabled && hovered) {
+            fill = hover;
+        }
+    }
+
+    // fill, square at the open edge
+    const QRectF fillRect = box.adjusted(0.5, 0.5, -0.5, 0);
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(fill);
+    Corners fillCorners = CornersTop;
+    if (openLeft) {
+        fillCorners &= ~CornerTopLeft;
+    }
+    if (openRight) {
+        fillCorners &= ~CornerTopRight;
+    }
+    painter->drawPath(roundedPath(openLeft || openRight ? fillRect.adjusted(openLeft ? -0.5 : 0, 0, openRight ? 0.5 : 0, 0) : fillRect, fillCorners, radius));
+
+    // outline on the three closed sides
+    const qreal l = box.left() + 0.5, r = box.right() - 0.5, top = box.top() + 0.5, b = box.bottom();
+    QPainterPath outline;
+    if (openLeft) {
+        outline.moveTo(box.left(), top);
+    } else {
+        outline.moveTo(l, b);
+        outline.lineTo(l, top + radius);
+        outline.arcTo(QRectF(l, top, 2 * radius, 2 * radius), 180, -90);
+    }
+    if (openRight) {
+        outline.lineTo(box.right(), top);
+    } else {
+        outline.lineTo(r - radius, top);
+        outline.arcTo(QRectF(r - 2 * radius, top, 2 * radius, 2 * radius), 90, -90);
+        outline.lineTo(r, b);
+    }
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(line, PenWidth::Frame));
+    painter->drawPath(outline);
+
+    // lit from above (only when the far edge really is on top)
+    if (!south && !west && !east && box.width() > 2 * radius + 2) {
+        painter->setPen(QPen(bevelHighlight(palette), 1));
+        painter->drawLine(QPointF(openLeft ? box.left() : l + radius, top + 1), QPointF(openRight ? box.right() : r - radius, top + 1));
+    }
+
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderArrow(QPainter *painter, const QRectF &rect, const QColor &color, ArrowOrientation orientation) const
+{
+    int size = std::min({rect.toRect().width(), rect.toRect().height(), Metrics::ArrowSize});
+    // No point in trying to draw if it's too small
+    if (size <= 0) {
+        return;
+    }
+
+    qreal penOffset = PenWidth::Symbol / 2.0;
+    qreal center = size / 2.0;
+    qreal maxExtent = size * 0.75;
+    qreal minExtent = size / 4.0;
+    qreal sizeOffset = 0;
+    int remainder = size % 4;
+    if (remainder == 2) {
+        sizeOffset = 0.5;
+    } else if (remainder == 1) {
+        sizeOffset = -0.25;
+    } else if (remainder == 3) {
+        sizeOffset = 0.25;
+    }
+
+    QPolygonF arrow;
+    switch (orientation) {
+    case ArrowUp:
+        arrow = QVector<QPointF>{
+            {penOffset, maxExtent - penOffset - sizeOffset}, // left
+            {center, minExtent - sizeOffset}, // mid
+            {size - penOffset, maxExtent - penOffset - sizeOffset} // right
+        };
+        break;
+    case ArrowDown:
+        arrow = QVector<QPointF>{
+            {penOffset, minExtent + penOffset + sizeOffset}, // left
+            {center, maxExtent + sizeOffset}, // mid
+            {size - penOffset, minExtent + penOffset + sizeOffset} // right
+        };
+        break;
+    case ArrowLeft:
+        arrow = QVector<QPointF>{
+            {maxExtent - penOffset - sizeOffset, penOffset}, // top
+            {minExtent - sizeOffset, center}, // mid
+            {maxExtent - penOffset - sizeOffset, size - penOffset}, // bottom
+        };
+        break;
+    case ArrowRight:
+        arrow = QVector<QPointF>{
+            {minExtent + penOffset + sizeOffset, penOffset}, // top
+            {maxExtent + sizeOffset, center}, // mid
+            {minExtent + penOffset + sizeOffset, size - penOffset}, // bottom
+        };
+        break;
+    default:
+        break;
+    }
+
+    arrow.translate(rect.x() + (rect.width() - size) / 2.0, rect.y() + (rect.height() - size) / 2.0);
+
+    painter->save();
+    painter->setRenderHints(QPainter::Antialiasing);
+    painter->setBrush(Qt::NoBrush);
+    QPen pen(color, PenWidth::Symbol);
+    pen.setCapStyle(Qt::SquareCap);
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter->setPen(pen);
+    painter->drawPolyline(arrow);
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderDecorationButton(QPainter *painter, const QRectF &rect, const QColor &color, ButtonType buttonType, bool inverted) const
+{
+    painter->save();
+    painter->setViewport(rect.toRect());
+    painter->setWindow(0, 0, 18, 18);
+    painter->setRenderHints(QPainter::Antialiasing);
+
+    // initialize pen
+    QPen pen;
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::MiterJoin);
+
+    if (inverted) {
+        // render circle
+        painter->setPen(Qt::NoPen);
+        painter->setBrush(color);
+        painter->drawEllipse(QRectF(0, 0, 18, 18));
+
+        // take out the inner part
+        painter->setCompositionMode(QPainter::CompositionMode_DestinationOut);
+        painter->setBrush(Qt::NoBrush);
+        pen.setColor(Qt::black);
+
+    } else {
+        painter->setBrush(Qt::NoBrush);
+        pen.setColor(color);
+    }
+
+    pen.setCapStyle(Qt::RoundCap);
+    pen.setJoinStyle(Qt::MiterJoin);
+    pen.setWidthF(PenWidth::Symbol * qMax(1.0, 18.0 / rect.width()));
+    painter->setPen(pen);
+
+    switch (buttonType) {
+    case ButtonClose: {
+        painter->drawLine(QPointF(5, 5), QPointF(13, 13));
+        painter->drawLine(13, 5, 5, 13);
+        break;
+    }
+
+    case ButtonMaximize: {
+        painter->drawPolyline(QVector<QPointF>{QPointF(4, 11), QPointF(9, 6), QPointF(14, 11)});
+        break;
+    }
+
+    case ButtonMinimize: {
+        painter->drawPolyline(QVector<QPointF>{QPointF(4, 7), QPointF(9, 12), QPointF(14, 7)});
+        break;
+    }
+
+    case ButtonRestore: {
+        pen.setJoinStyle(Qt::RoundJoin);
+        painter->setPen(pen);
+        painter->drawPolygon(QVector<QPointF>{QPointF(4.5, 9), QPointF(9, 4.5), QPointF(13.5, 9), QPointF(9, 13.5)});
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    painter->restore();
+}
+
+//______________________________________________________________________________
+void Helper::renderRoundedRectShadow(QPainter *painter, const QRectF &rect, const QColor &color, qreal radius) const
+{
+    if (!color.isValid()) {
+        return;
+    }
+
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    qreal adjustment = 0.5 * PenWidth::Shadow; // Translate for the pen
+    QRectF shadowRect = rect.adjusted(adjustment, adjustment, -adjustment, adjustment);
+
+    painter->setPen(QPen(color, PenWidth::Shadow));
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(shadowRect, radius, radius);
+}
+
+//______________________________________________________________________________
+void Helper::renderEllipseShadow(QPainter *painter, const QRectF &rect, const QColor &color) const
+{
+    if (!color.isValid()) {
+        return;
+    }
+
+    painter->save();
+
+    // Clipping does not improve performance here
+
+    qreal adjustment = 0.5 * PenWidth::Shadow; // Adjust for the pen
+
+    qreal radius = rect.width() / 2 - adjustment;
+
+    /* The right side is offset by +0.5 for the visible part of the shadow.
+     * The other sides are offset by +0.5 or -0.5 because of the pen.
+     */
+    QRectF shadowRect = rect.adjusted(adjustment, adjustment, adjustment, -adjustment);
+
+    painter->translate(rect.center());
+    painter->rotate(45);
+    painter->translate(-rect.center());
+    painter->setPen(color);
+    painter->setBrush(Qt::NoBrush);
+    painter->drawRoundedRect(shadowRect, radius, radius);
+
+    painter->restore();
+}
+
+void Helper::renderViewItemPosition(QPainter *painter,
+                                    const QStyleOptionViewItem::ViewItemPosition &pos,
+                                    const Qt::LayoutDirection direction,
+                                    const QRectF &rect,
+                                    const QBrush &bg,
+                                    const QColor &outline) const
+{
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    QFlags<PlatinumNeue::Side> sides;
+    const bool reverse = direction == Qt::RightToLeft;
+
+    switch (pos) {
+    case QStyleOptionViewItem::Invalid:
+        painter->setBrush(bg);
+        painter->setPen(outline);
+        painter->drawRect(rect);
+        painter->restore();
+        return;
+    case QStyleOptionViewItem::Beginning:
+        painter->setClipping(true);
+        painter->setClipRect(rect);
+        sides = SideTop | SideBottom | (reverse ? SideRight : SideLeft);
+        break;
+    case QStyleOptionViewItem::Middle:;
+        sides = SideTop | SideBottom;
+        break;
+    case QStyleOptionViewItem::End:
+        painter->setClipping(true);
+        painter->setClipRect(rect);
+        sides = SideTop | SideBottom | (reverse ? SideLeft : SideRight);
+        break;
+    case QStyleOptionViewItem::OnlyOne:
+        sides = SideTop | SideBottom | SideLeft | SideRight;
+        break;
+    }
+    renderFocusRect(painter, rect, bg, outline, sides);
+    painter->restore();
+}
+
+//______________________________________________________________________________
+bool Helper::isX11()
+{
+    static const bool s_isX11 = KWindowSystem::isPlatformX11();
+    return s_isX11;
+}
+
+//______________________________________________________________________________
+bool Helper::isWayland()
+{
+    static const bool s_isWayland = KWindowSystem::isPlatformWayland();
+    return s_isWayland;
+}
+
+//______________________________________________________________________________
+QRectF Helper::strokedRect(const QRectF &rect, const qreal penWidth) const
+{
+    /* With a pen stroke width of 1, the rectangle should have each of its
+     * sides moved inwards by half a pixel. This allows the stroke to be
+     * pixel perfect instead of blurry from sitting between pixels and
+     * prevents the rectangle with a stroke from becoming larger than the
+     * original size of the rectangle.
+     */
+    qreal adjustment = 0.5 * penWidth;
+    return rect.adjusted(adjustment, adjustment, -adjustment, -adjustment);
+}
+
+QMargins Helper::itemViewItemMargins(const QStyleOptionViewItem *option) const
+{
+    QMargins margins(Metrics::ItemView_ItemMarginLeft, Metrics::ItemView_ItemMarginTop, Metrics::ItemView_ItemMarginRight, Metrics::ItemView_ItemMarginBottom);
+    if (!option) {
+        return margins;
+    }
+
+    const QFrame *frame = qobject_cast<const QFrame *>(option->widget);
+    const QAbstractItemView *abstractItemView = qobject_cast<const QAbstractItemView *>(option->widget);
+
+    const bool isFirst = option->index.row() == 0;
+    const bool hasFrame = frame && frame->frameShape() == QFrame::StyledPanel;
+    const bool reverse = option->direction == Qt::RightToLeft;
+
+    if (isFirst) {
+        margins.setTop(Metrics::ItemView_FirstItemTopMarginHeight);
+    }
+
+    // PlatinumNeue frame has one extra white pixel
+    if (hasFrame) {
+        margins -= {1, isFirst ? 1 : 0, 1, 0};
+    }
+
+    // If a treeview wants to show the highlight separate for each column, always draw rounded borders
+    // if (tree && !tree->allColumnsShowFocus()) {
+    if (abstractItemView && abstractItemView->selectionBehavior() != QAbstractItemView::SelectRows) {
+        return margins;
+    }
+
+    if ((reverse && option->viewItemPosition == QStyleOptionViewItem::End) || (!reverse && option->viewItemPosition == QStyleOptionViewItem::Beginning)
+        || option->viewItemPosition == QStyleOptionViewItem::Middle) {
+        margins.setRight(0);
+    }
+    if ((reverse && option->viewItemPosition == QStyleOptionViewItem::Beginning) || (!reverse && option->viewItemPosition == QStyleOptionViewItem::End)
+        || option->viewItemPosition == QStyleOptionViewItem::Middle) {
+        margins.setLeft(0);
+    }
+
+    return margins;
+}
+
+//______________________________________________________________________________
+QPainterPath Helper::roundedPath(const QRectF &rect, Corners corners, qreal radius) const
+{
+    QPainterPath path;
+
+    // simple cases
+    if (corners == 0) {
+        path.addRect(rect);
+        return path;
+    }
+
+    if (corners == AllCorners) {
+        path.addRoundedRect(rect, radius, radius);
+        return path;
+    }
+
+    const QSizeF cornerSize(2 * radius, 2 * radius);
+
+    // rotate counterclockwise
+    // top left corner
+    if (corners & CornerTopLeft) {
+        path.moveTo(rect.topLeft() + QPointF(radius, 0));
+        path.arcTo(QRectF(rect.topLeft(), cornerSize), 90, 90);
+
+    } else {
+        path.moveTo(rect.topLeft());
+    }
+
+    // bottom left corner
+    if (corners & CornerBottomLeft) {
+        path.lineTo(rect.bottomLeft() - QPointF(0, radius));
+        path.arcTo(QRectF(rect.bottomLeft() - QPointF(0, 2 * radius), cornerSize), 180, 90);
+
+    } else {
+        path.lineTo(rect.bottomLeft());
+    }
+
+    // bottom right corner
+    if (corners & CornerBottomRight) {
+        path.lineTo(rect.bottomRight() - QPointF(radius, 0));
+        path.arcTo(QRectF(rect.bottomRight() - QPointF(2 * radius, 2 * radius), cornerSize), 270, 90);
+
+    } else {
+        path.lineTo(rect.bottomRight());
+    }
+
+    // top right corner
+    if (corners & CornerTopRight) {
+        path.lineTo(rect.topRight() + QPointF(0, radius));
+        path.arcTo(QRectF(rect.topRight() - QPointF(2 * radius, 0), cornerSize), 0, 90);
+
+    } else {
+        path.lineTo(rect.topRight());
+    }
+
+    path.closeSubpath();
+    return path;
+}
+
+//________________________________________________________________________________________________________
+bool Helper::compositingActive() const
+{
+    if (isX11()) {
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+        return KWindowSystem::compositingActive();
+#elif __has_include(<KX11Extras>)
+        return KX11Extras::compositingActive();
+#endif
+    }
+
+    return true;
+}
+
+//____________________________________________________________________
+bool Helper::hasAlphaChannel(const QWidget *widget) const
+{
+    return compositingActive() && widget && widget->testAttribute(Qt::WA_TranslucentBackground);
+}
+
+//______________________________________________________________________________________
+
+QPixmap Helper::coloredIcon(const QIcon &icon, const QPalette &palette, const QSize &size, qreal devicePixelRatio, QIcon::Mode mode, QIcon::State state)
+{
+    const QPalette activePalette = KIconLoader::global()->customPalette();
+    const bool changePalette = activePalette != palette;
+    if (changePalette) {
+        KIconLoader::global()->setCustomPalette(palette);
+    }
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    const QPixmap pixmap = icon.pixmap(size, devicePixelRatio, mode, state);
+#else
+    Q_UNUSED(devicePixelRatio);
+    const QPixmap pixmap = icon.pixmap(size, mode, state);
+#endif
+    if (changePalette) {
+        if (activePalette == QPalette()) {
+            KIconLoader::global()->resetPalette();
+        } else {
+            KIconLoader::global()->setCustomPalette(activePalette);
+        }
+    }
+    return pixmap;
+}
+
+bool Helper::shouldDrawToolsArea(const QWidget *widget) const
+{
+    if (!widget) {
+        return false;
+    }
+    static bool isAuto = false;
+    static QString borderSize;
+    if (!_cachedAutoValid) {
+        KConfigGroup kdecorationGroup(_kwinConfig->group(QStringLiteral("org.kde.kdecoration2")));
+        isAuto = kdecorationGroup.readEntry("BorderSizeAuto", true);
+        borderSize = kdecorationGroup.readEntry("BorderSize", "Normal");
+        _cachedAutoValid = true;
+    }
+    if (isAuto) {
+        auto window = widget->window();
+        if (qobject_cast<const QDialog *>(widget)) {
+            return true;
+        }
+        if (window) {
+            auto handle = window->windowHandle();
+            if (handle) {
+                auto toolbar = qobject_cast<const QToolBar *>(widget);
+                if (toolbar) {
+                    if (toolbar->isFloating()) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+    if (borderSize != "None" && borderSize != "NoSides") {
+        return false;
+    }
+    return true;
+}
+
+Qt::Edges Helper::menuSeamlessEdges(const QWidget *widget)
+{
+    if (widget) {
+        auto edges = widget->property(PropertyNames::menuSeamlessEdges).value<Qt::Edges>();
+        // Fallback to older property
+        if (edges == Qt::Edges() && widget->property(PropertyNames::isTopMenu).toBool()) {
+            edges = Qt::TopEdge;
+        }
+        return edges;
+    }
+    return Qt::Edges();
+}
+
+qreal Helper::devicePixelRatio(QPainter *painter) const
+{
+    return painter->device() ? painter->device()->devicePixelRatioF() : qApp->devicePixelRatio();
+}
+}

@@ -1,0 +1,16 @@
+{
+    "KPlugin": {
+        "Description": "Window decoration in the Platinum Neue style",
+        "EnabledByDefault": true,
+        "Name": "Platinum Neue"
+    },
+    "X-KDE-ConfigModule": "kcm_platinumneuedecoration",
+    "org.kde.kdecoration3": {
+        "blur": false,
+        "recommendedBorderSize": "None",
+        "styles": [
+            "shadow",
+            "titled"
+        ]
+    }
+}

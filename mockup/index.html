@@ -1,0 +1,863 @@
+<title>Platinum Neue</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=EB+Garamond:ital,wght@0,400..800;1,400..800&display=swap">
+<style>
+/* Layout: a theme study. Page chrome is itself built from the theme's tokens, so the page dogfoods the system.
+   Scene (1:1 desktop) → controls window → principles → tokens/contrast → type. */
+:root{
+  /* accent (set by picker) */
+  --accent-l:#4C5BD4; --accent-d:#5A68DA;
+  --on-accent-l:#FFFFFF; --on-accent-d:#FFFFFF;
+  --focus-l:#4C5BD4; --focus-d:#7D89EE;
+
+  /* neutrals, light */
+  --desk:#A39F98;
+  --chrome:#E6E4E0;
+  --chrome-2:#DAD8D3;
+  --raised:#F3F2EF;
+  --raised-hover:#F9F8F6;
+  --close:#C4553B;
+  --content:#FCFBFA;
+  --line:#7E7A73;
+  --line-strong:#5F5B55;
+  --line-soft:#C9C6C0;
+  --frame:#837F78;
+  --hi:rgba(255,255,255,.95);
+  --shade:rgba(40,36,30,.12);
+  --stripe-a:rgba(70,64,56,.17);
+  --stripe-b:rgba(255,255,255,.75);
+  --text:#1C1B19;
+  --text-2:#57544E;
+  --text-dis:#A09C95;
+  --tip-bg:#2A2927; --tip-fg:#F2F0EC;
+  --folder:#D3D0CA;
+  --shadow-win:0 10px 30px rgba(30,28,24,.22),0 2px 6px rgba(30,28,24,.16);
+  --shadow-win-in:0 4px 14px rgba(30,28,24,.14),0 1px 3px rgba(30,28,24,.12);
+  --shadow-pop:0 8px 22px rgba(30,28,24,.22),0 1px 3px rgba(30,28,24,.18);
+
+  --accent:var(--accent-l); --on-accent:var(--on-accent-l); --focus:var(--focus-l);
+  --sel-soft:color-mix(in oklab,var(--accent) 16%,var(--content));
+
+  /* surfaces & edges */
+  --g-raised:var(--raised); --g-raised-x:var(--raised); --g-chrome:var(--chrome); --g-accent:var(--accent);
+  --sh-raised:inset 0 1px 0 var(--hi),0 1px 0 var(--shade);
+  --sh-inset:inset 0 1px 2px var(--shade);
+  --sh-pressed:inset 0 1px 2px var(--shade);
+  --sh-well:inset 0 1px 0 var(--hi);
+  --close-tint:color-mix(in oklab,var(--close) 16%,var(--raised));
+
+  /* type */
+  --ui:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --serif:"EB Garamond",Garamond,"Times New Roman",serif;
+  --mono:ui-monospace,"JetBrains Mono","DejaVu Sans Mono",monospace;
+
+  /* metrics */
+  --r:3px; --r-sm:2px; --ctl:24px; --z:1;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --desk:#383633;
+  --chrome:#2B2A28; --chrome-2:#232220; --raised:#363532; --raised-hover:#3D3C39; --content:#1B1A19;
+  --close:#D2694F;
+  --line:#79756E; --line-strong:#141312; --line-soft:#3E3C39; --frame:#0E0D0C;
+  --hi:rgba(255,255,255,.06); --shade:rgba(0,0,0,.4);
+  --stripe-a:rgba(0,0,0,.42); --stripe-b:rgba(255,255,255,.055);
+  --text:#EDEBE7; --text-2:#A9A59E; --text-dis:#66635D;
+  --tip-bg:#3A3936; --tip-fg:#EDEBE7; --folder:#4A4844;
+  --shadow-win:0 12px 34px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);
+  --shadow-win-in:0 4px 16px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --shadow-pop:0 10px 26px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.4);
+  --accent:var(--accent-d); --on-accent:var(--on-accent-d); --focus:var(--focus-d);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --desk:#383633;
+  --chrome:#2B2A28; --chrome-2:#232220; --raised:#363532; --raised-hover:#3D3C39; --content:#1B1A19;
+  --close:#D2694F;
+  --line:#79756E; --line-strong:#141312; --line-soft:#3E3C39; --frame:#0E0D0C;
+  --hi:rgba(255,255,255,.06); --shade:rgba(0,0,0,.4);
+  --stripe-a:rgba(0,0,0,.42); --stripe-b:rgba(255,255,255,.055);
+  --text:#EDEBE7; --text-2:#A9A59E; --text-dis:#66635D;
+  --tip-bg:#3A3936; --tip-fg:#EDEBE7; --folder:#4A4844;
+  --shadow-win:0 12px 34px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.4);
+  --shadow-win-in:0 4px 16px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.3);
+  --shadow-pop:0 10px 26px rgba(0,0,0,.55),0 1px 3px rgba(0,0,0,.4);
+  --accent:var(--accent-d); --on-accent:var(--on-accent-d); --focus:var(--focus-d);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--chrome-2);color:var(--text);font:13px/1.35 var(--ui);margin:0;-webkit-font-smoothing:antialiased}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+button{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- page header ---------- */
+.masthead{background:var(--chrome);border-bottom:1px solid var(--line-soft);box-shadow:inset 0 -1px 0 var(--hi)}
+.masthead .wrap{padding-block:28px 18px;display:grid;gap:18px}
+.mast-top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+h1{font:700 44px/1 var(--ui);font-stretch:82%;letter-spacing:-.01em;margin:0}
+.mast-sub{color:var(--text-2);margin:6px 0 0;max-width:62ch;font-size:14px}
+.stripes-mark{height:10px;width:120px;background:repeating-linear-gradient(to bottom,var(--stripe-a) 0 1px,var(--stripe-b) 1px 2px,transparent 2px 4px)}
+.controls{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.ctl-group{display:flex;align-items:center;gap:8px}
+.ctl-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)}
+.swatches{display:flex;gap:6px}
+.swatch{width:20px;height:20px;border-radius:var(--r-sm);border:1px solid var(--line);padding:0;cursor:pointer;box-shadow:inset 0 0 0 2px var(--chrome)}
+.swatch[aria-pressed="true"]{outline:2px solid var(--text);outline-offset:1px}
+
+/* ---------- section scaffolding ---------- */
+section{padding-block:34px 8px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;margin-bottom:14px}
+h2{font:650 20px/1.2 var(--ui);margin:0;text-wrap:balance}
+.sec-note{color:var(--text-2);margin:0;max-width:70ch}
+.scroller{overflow-x:auto;border:1px solid var(--frame);border-radius:var(--r);background:var(--desk)}
+
+/* ---------- core controls ---------- */
+.btn{height:var(--ctl);padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--g-raised);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--sh-raised);cursor:default;white-space:nowrap;user-select:none}
+.btn:hover{background:var(--raised-hover)}
+.btn:active,.btn.is-pressed,.btn[aria-pressed="true"]{background:var(--chrome-2);box-shadow:var(--sh-pressed)}
+.btn.default{background:var(--g-accent);color:var(--on-accent);border-color:color-mix(in oklab,var(--accent) 70%,#000);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 var(--shade);font-weight:600}
+.btn.default:hover{background:color-mix(in oklab,var(--accent) 90%,#fff)}
+.btn.default:active{background:color-mix(in oklab,var(--accent) 85%,#000);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+.btn:disabled{color:var(--text-dis);border-color:var(--line-soft);box-shadow:none;background:var(--chrome)}
+.btn.icon{width:var(--ctl);padding:0}
+.btn.flat{background:transparent;border-color:transparent;box-shadow:none}
+.btn.flat:hover{background:var(--g-raised);border-color:var(--line);box-shadow:var(--sh-raised)}
+.btn.flat:active{background:var(--chrome-2);box-shadow:var(--sh-pressed)}
+
+.seg{display:inline-flex}
+.seg .btn{border-radius:0;margin-left:-1px}
+.seg .btn:first-child{border-radius:var(--r) 0 0 var(--r);margin-left:0}
+.seg .btn:last-child{border-radius:0 var(--r) var(--r) 0}
+.seg .btn[aria-pressed="true"]{position:relative;z-index:1}
+.seg .btn:focus-visible{z-index:2}
+
+.field{height:var(--ctl);display:inline-flex;align-items:center;gap:6px;padding:0 7px;background:var(--content);
+  border:1px solid var(--line);border-top-color:var(--line-strong);border-radius:var(--r-sm);
+  box-shadow:var(--sh-inset);color:var(--text);min-width:0}
+.field input{all:unset;flex:1;min-width:0;font:inherit;color:inherit}
+.field input::placeholder{color:var(--text-2)}
+.field:focus-within{outline:2px solid var(--focus);outline-offset:1px}
+.field .i{color:var(--text-2)}
+.field.disabled{background:var(--chrome);color:var(--text-dis);border-color:var(--line-soft);box-shadow:none}
+
+/* checkbox / radio / switch (span drawn, real input hidden) */
+.chk{display:inline-flex;align-items:center;gap:8px;cursor:default;user-select:none}
+.chk input{position:absolute;opacity:0;width:1px;height:1px}
+.chk .box{width:15px;height:15px;flex:none;display:grid;place-items:center;background:var(--content);
+  border:1px solid var(--line);border-top-color:var(--line-strong);border-radius:var(--r-sm);box-shadow:var(--sh-inset)}
+.chk .box svg{width:11px;height:11px;stroke:var(--on-accent);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.chk input:checked+.box,.chk.mixed .box{background:var(--g-accent);border-color:color-mix(in oklab,var(--accent) 70%,#000);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+.chk input:checked+.box svg.ck,.chk.mixed .box svg.mx{opacity:1}
+.chk input:focus-visible+.box{outline:2px solid var(--focus);outline-offset:1px}
+.chk input:disabled+.box{background:var(--chrome);border-color:var(--line-soft);box-shadow:none}
+.chk input:disabled~.lbl{color:var(--text-dis)}
+.chk.radio .box{border-radius:50%}
+.chk.radio .box::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--on-accent);opacity:0}
+.chk.radio input:checked+.box::after{opacity:1}
+.chk.switch .box{width:30px;height:17px;border-radius:9px;place-items:center start;padding:0 1px;background:var(--chrome-2)}
+.chk.switch .box::after{content:"";width:13px;height:13px;border-radius:50%;background:var(--g-raised);border:1px solid var(--line);box-shadow:0 1px 1px var(--shade);transition:transform .14s ease}
+.chk.switch input:checked+.box::after{transform:translateX(13px)}
+
+.combo{height:var(--ctl);display:inline-flex;align-items:stretch;padding:0;background:var(--g-raised);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--sh-raised);min-width:150px;cursor:default}
+.combo:hover{background:var(--raised-hover)}
+.combo span{flex:1;display:flex;align-items:center;padding:0 10px;text-align:left}
+.combo .arr{flex:none;width:20px;display:grid;place-items:center;border-left:1px solid var(--line-soft)}
+.combo .arr svg{width:12px;height:12px}
+
+.spin{display:inline-flex;align-items:stretch}
+.spin .field{border-radius:var(--r-sm) 0 0 var(--r-sm);width:64px}
+.spin .arrows{display:flex;flex-direction:column;width:17px;border:1px solid var(--line);border-left:0;border-radius:0 var(--r-sm) var(--r-sm) 0;overflow:hidden;background:var(--raised);box-shadow:inset 0 1px 0 var(--hi)}
+.spin .arrows button{flex:1;border:0;background:none;padding:0;display:grid;place-items:center}
+.spin .arrows button+button{border-top:1px solid var(--line-soft)}
+.spin .arrows button:active{background:var(--chrome-2)}
+.spin .arrows svg{width:9px;height:9px;stroke-width:1.8}
+
+/* range */
+input[type=range]{appearance:none;-webkit-appearance:none;background:transparent;width:100%;height:20px;margin:0;--pct:50%}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border:1px solid var(--line);border-top-color:var(--line-strong);border-radius:3px;
+  background:linear-gradient(to right,var(--accent) var(--pct),var(--chrome-2) var(--pct));box-shadow:var(--sh-inset)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:18px;margin-top:-7px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--raised) linear-gradient(var(--line),var(--line)) center/1px 8px no-repeat;box-shadow:inset 0 1px 0 var(--hi),0 1px 2px var(--shade)}
+input[type=range]::-moz-range-track{height:4px;border:1px solid var(--line);border-top-color:var(--line-strong);border-radius:3px;background:var(--chrome-2)}
+input[type=range]::-moz-range-progress{height:4px;background:var(--accent);border-radius:3px 0 0 3px}
+input[type=range]::-moz-range-thumb{width:9px;height:16px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--raised) linear-gradient(var(--line),var(--line)) center/1px 8px no-repeat;box-shadow:inset 0 1px 0 var(--hi),0 1px 2px var(--shade)}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{outline:2px solid var(--focus);outline-offset:1px}
+input[type=range]:focus-visible::-moz-range-thumb{outline:2px solid var(--focus);outline-offset:1px}
+.ticks{height:5px;margin:0 5px;background:repeating-linear-gradient(to right,var(--line) 0 1px,transparent 1px calc(25% - .25px))}
+
+.progress{height:10px;border:1px solid var(--line);border-top-color:var(--line-strong);border-radius:var(--r-sm);background:var(--chrome-2);box-shadow:var(--sh-inset);overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--g-accent);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.progress.busy>i{width:100%;background:repeating-linear-gradient(-45deg,var(--accent) 0 6px,color-mix(in oklab,var(--accent) 55%,var(--content)) 6px 12px);background-size:17px 17px;animation:barber 1.1s linear infinite}
+@keyframes barber{to{background-position:17px 0}}
+@media (prefers-reduced-motion:reduce){.progress.busy>i{animation:none}}
+
+/* scrollbars */
+.scrolly{overflow:auto;scrollbar-color:var(--line) var(--chrome-2)}
+.scrolly::-webkit-scrollbar{width:14px;height:14px}
+.scrolly::-webkit-scrollbar-track{background:var(--chrome-2);box-shadow:inset 1px 0 0 var(--line-soft)}
+.scrolly::-webkit-scrollbar-thumb{background-color:var(--raised);border:2px solid transparent;background-clip:padding-box;border-radius:4px;
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 2px 0 var(--hi);
+  background-image:repeating-linear-gradient(to bottom,var(--line) 0 1px,transparent 1px 3px);background-size:6px 7px;background-position:center;background-repeat:no-repeat}
+.scrolly::-webkit-scrollbar-thumb:hover{background-color:var(--raised-hover)}
+.scrolly::-webkit-scrollbar-corner{background:var(--chrome-2)}
+
+/* ---------- windows ---------- */
+.stage{position:relative;width:1140px;height:720px;zoom:var(--z);background:
+  radial-gradient(120% 90% at 30% 10%,color-mix(in oklab,var(--desk) 88%,#fff),var(--desk) 60%);overflow:hidden}
+.win{position:absolute;display:flex;flex-direction:column;background:var(--chrome);border:1px solid var(--frame);border-radius:var(--r);
+  box-shadow:var(--shadow-win-in);overflow:hidden}
+.win.active{box-shadow:var(--shadow-win)}
+.win.min{display:none}
+.win.max{left:0!important;top:0!important;width:100%!important;height:calc(100% - 37px)!important;border-radius:0}
+.win.shaded{height:auto!important}
+.win.shaded>:not(.tb){display:none}
+
+.tb{height:26px;flex:none;display:flex;align-items:center;gap:6px;padding:0 7px;user-select:none;cursor:default;
+  background:var(--g-chrome);box-shadow:inset 0 1px 0 var(--hi)}
+.tb .stripes{flex:1;height:10px;min-width:12px;opacity:0;
+  background:repeating-linear-gradient(to bottom,var(--stripe-a) 0 1px,var(--stripe-b) 1px 2px,transparent 2px 4px)}
+.win.active .tb .stripes{opacity:1}
+.tb .title{font-weight:620;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;color:var(--text-2)}
+.win.active .tb .title{color:var(--text)}
+.tbb{width:14px;height:14px;flex:none;padding:0;display:grid;place-items:center;background:var(--g-raised);border:1px solid var(--line);border-radius:var(--r-sm);
+  box-shadow:var(--sh-raised)}
+.tbb svg{width:10px;height:10px;stroke-width:1.6;opacity:0}
+.tb:hover .tbb svg,.tbb:focus-visible svg{opacity:.85}
+.win.active .tbb.b-close{background:var(--close-tint);border-color:color-mix(in oklab,var(--close) 40%,var(--line))}
+.tbb:active,.win.active .tbb.b-close:active{background:var(--chrome-2);box-shadow:var(--sh-pressed)}
+.win:not(.active) .tbb{background:transparent;border-color:var(--line-soft);box-shadow:none}
+.tb .pad{flex:none;width:54px}
+/* Plasma order (default): pad · stripes · title · stripes · min max close */
+.tb .b-close{order:6}.tb .b-min{order:4}.tb .b-max{order:5}.tb .b-shade{display:none}
+.tb .pad{order:0}.tb .s1{order:1}.tb .title{order:2}.tb .s2{order:3}
+/* Platinum order: close · stripes · title · stripes · zoom shade */
+.order-platinum .tb .b-close{order:0}
+.order-platinum .tb .b-min{display:none}
+.order-platinum .tb .b-max{order:4}
+.order-platinum .tb .b-shade{display:grid;order:5}
+.order-platinum .tb .pad{order:0;width:14px}
+
+.toolbar{flex:none;display:flex;align-items:center;gap:6px;padding:4px 8px 6px}
+.crumbs{flex:1;max-width:340px}
+.crumbs .sep{color:var(--text-2)}
+.win-body{flex:1;min-height:0;display:grid;border-top:1px solid var(--line-soft)}
+
+/* file manager */
+.fm .win-body{grid-template-columns:178px 1fr}
+.side{background:var(--chrome);padding:6px 0;border-right:1px solid var(--line-soft);overflow:auto}
+.disc{all:unset;display:flex;align-items:center;gap:4px;width:100%;box-sizing:border-box;padding:6px 10px 3px;font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)}
+.disc svg{width:9px;height:9px;fill:currentColor;stroke:none;transition:transform .12s}
+.disc[aria-expanded="false"] svg{transform:rotate(-90deg)}
+.disc:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.places{list-style:none;margin:0 0 6px;padding:0 6px}
+.places li{display:flex;align-items:center;gap:8px;height:24px;padding:0 8px;border-radius:var(--r-sm);color:var(--text)}
+.places li .i{color:var(--text-2)}
+.places li.on{background:var(--chrome-2);box-shadow:var(--sh-pressed)}
+.places li.on .i{color:var(--accent)}
+.places li .cap{margin-left:auto;font-size:11px;color:var(--text-2)}
+.list{background:var(--content);display:flex;flex-direction:column;min-width:0}
+.lhead,.lrow{display:grid;grid-template-columns:minmax(0,1fr) 84px 108px 130px;align-items:center}
+.lhead{flex:none;height:22px;border-bottom:1px solid var(--line-soft);background:var(--chrome)}
+.lhead div{height:100%;display:flex;align-items:center;gap:4px;padding:0 8px;font-size:12px;color:var(--text-2);border-right:1px solid var(--line-soft);background:var(--g-chrome);box-shadow:inset 0 1px 0 var(--hi)}
+.lhead div.sorted{background:var(--chrome-2);color:var(--text);font-weight:600;box-shadow:var(--sh-pressed)}
+.lhead svg{width:10px;height:10px;stroke-width:1.8}
+.lbody{flex:1;min-height:0;padding:2px 0}
+.lrow{height:24px;padding:0 0 0 0;cursor:default}
+.lrow>div{padding:0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .nm{display:flex;align-items:center;gap:8px}
+.lrow .num,.lrow .dt{font-variant-numeric:tabular-nums;color:var(--text-2)}
+.lrow .kd{color:var(--text-2)}
+.lrow:focus{outline:none}
+.lrow[aria-selected="true"]{background:var(--sel-soft)}
+.list:focus-within .lrow[aria-selected="true"],.win.active .lrow[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+.win.active .lrow[aria-selected="true"] div,.win.active .lrow[aria-selected="true"] .i{color:var(--on-accent)}
+.lrow:focus-visible{box-shadow:inset 0 0 0 2px var(--focus)}
+.ico-folder{fill:var(--folder);stroke:var(--text-2)}
+.statusbar{flex:none;height:24px;display:flex;align-items:center;gap:12px;padding:0 10px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--text-2)}
+.statusbar input[type=range]{width:90px;margin-left:auto}
+
+/* editor */
+.ed .win-body{grid-template-rows:1fr}
+.menubar{flex:none;display:flex;height:22px;align-items:stretch;padding:0 4px}
+.menubar span{display:flex;align-items:center;padding:0 8px;border-radius:var(--r-sm)}
+.menubar span.open{background:var(--accent);color:var(--on-accent)}
+.editor{background:var(--content);font:12.5px/1.6 var(--mono);padding:10px 0;color:var(--text);overflow:hidden}
+.editor div{display:grid;grid-template-columns:38px 1fr;white-space:pre}
+.editor div::before{content:attr(data-n);text-align:right;padding-right:12px;color:var(--text-dis)}
+.editor .h{font-weight:700}
+.editor .m{color:var(--text-2)}
+
+/* panel */
+.panel{position:absolute;left:0;right:0;bottom:0;height:37px;display:flex;align-items:center;gap:4px;padding:0 6px;
+  background:var(--g-chrome);border-top:1px solid var(--frame);box-shadow:inset 0 1px 0 var(--hi);z-index:50}
+.task{height:29px;display:flex;align-items:center;gap:7px;padding:0 10px;min-width:150px;border:1px solid transparent;border-radius:var(--r);background:none}
+.task:hover{background:var(--g-raised);border-color:var(--line);box-shadow:var(--sh-raised)}
+.task[aria-pressed="true"]{background:var(--chrome-2);border-color:var(--line);box-shadow:var(--sh-pressed)}
+.task .i{color:var(--text-2)}
+.launcher{width:31px;height:29px}
+.vsep{width:1px;height:20px;background:var(--line-soft);margin:0 4px}
+.tray{margin-left:auto;display:flex;align-items:center;gap:2px}
+.tray .btn.flat{width:28px;height:28px;padding:0}
+.tray .btn.flat[aria-pressed="true"]{background:var(--chrome-2);border-color:var(--line);box-shadow:var(--sh-pressed)}
+.clock{padding:0 10px;font-family:var(--serif);font-size:17px;font-variant-numeric:lining-nums tabular-nums;font-weight:500;white-space:nowrap;letter-spacing:.01em}
+.clock small{font:inherit;color:var(--text-2);margin-right:7px}
+.traypop h3{font-family:var(--serif);font-size:18px;font-weight:500;letter-spacing:.005em}
+
+/* popups */
+.pop{position:absolute;background:var(--raised);border:1px solid var(--frame);border-radius:var(--r);box-shadow:var(--shadow-pop);z-index:60}
+.traypop{right:118px;bottom:44px;width:290px;padding:12px 14px 14px;display:grid;gap:10px}
+.pop h3{margin:0;font-size:13px;font-weight:650;display:flex;align-items:center;justify-content:space-between}
+.pop .row{display:grid;grid-template-columns:20px 1fr 38px;align-items:center;gap:8px}
+.pop .row .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);font-size:12px}
+.pop .hint{font-size:12px;color:var(--text-2)}
+.hr{height:1px;background:var(--line-soft)}
+.notif{right:12px;top:12px;width:330px;padding:12px 12px 12px 14px;display:grid;grid-template-columns:32px 1fr auto;gap:4px 12px}
+.notif .appic{width:32px;height:32px;border-radius:var(--r);background:var(--chrome-2);border:1px solid var(--line-soft);display:grid;place-items:center;grid-row:span 3;color:var(--text-2)}
+.notif .app{font-size:11px;color:var(--text-2);letter-spacing:.02em}
+.notif .ttl{font-weight:650;grid-column:2}
+.notif .body{grid-column:2;color:var(--text-2);font-size:12.5px}
+.notif .acts{grid-column:2/4;display:flex;gap:6px;margin-top:8px}
+.notif .x{grid-row:1;grid-column:3;width:18px;height:18px}
+.notif .x svg{width:10px;height:10px}
+
+/* ---------- controls window (gallery) ---------- */
+.gallery-row{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:24px;align-items:start;zoom:var(--z)}
+@media (max-width:980px){.gallery-row{grid-template-columns:minmax(0,1fr)}}
+.gallery-row .win{position:relative;box-shadow:var(--shadow-win)}
+.gwin .win-body{background:var(--chrome);padding:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;position:relative}
+.group{border:1px solid var(--line-soft);border-radius:var(--r);padding:14px 12px 12px;position:relative;box-shadow:var(--sh-well),0 1px 0 var(--hi);display:grid;gap:10px;align-content:start;min-width:0}
+.group>.gl{position:absolute;top:-8px;left:8px;padding:0 5px;background:var(--chrome);font-size:12px;font-weight:620;color:var(--text-2)}
+.row-w{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lab{display:grid;gap:4px;font-size:12px;color:var(--text-2)}
+.lab .field{width:100%}
+
+.tabs{display:flex;padding-left:6px;position:relative;z-index:1}
+.tab{height:24px;padding:0 12px;margin-right:-1px;background:var(--chrome-2);border:1px solid var(--line);border-bottom:0;border-radius:var(--r) var(--r) 0 0;color:var(--text-2);box-shadow:inset 0 1px 0 var(--hi)}
+.tab[aria-selected="true"]{background:var(--raised);color:var(--text);font-weight:600;height:26px;margin-top:-2px;position:relative;z-index:2;margin-bottom:-1px}
+.tabpane{border:1px solid var(--line);border-radius:0 var(--r) var(--r) var(--r);background:var(--raised);padding:12px;box-shadow:inset 0 1px 0 var(--hi);font-size:12.5px;color:var(--text-2);min-height:70px}
+
+.scrollbox{height:118px;background:var(--content);border:1px solid var(--line);border-top-color:var(--line-strong);border-radius:var(--r-sm);box-shadow:inset 0 1px 2px var(--shade)}
+.scrollbox ol{margin:0;padding:6px 10px 6px 34px;width:420px;font-variant-numeric:tabular-nums;line-height:1.7}
+
+.menu{position:absolute;min-width:210px;padding:4px 0;background:var(--raised);border:1px solid var(--frame);border-radius:var(--r);box-shadow:var(--shadow-pop);z-index:20;font-size:13px}
+.menu .mi{display:grid;grid-template-columns:22px 1fr auto 16px;align-items:center;height:23px;padding:0 6px 0 4px;cursor:default}
+.menu .mi .k{color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums;padding-left:20px}
+.menu .mi svg{width:12px;height:12px;stroke-width:1.8}
+.menu .mi:hover,.menu .mi.hl{background:var(--accent);color:var(--on-accent)}
+.menu .mi:hover .k,.menu .mi.hl .k{color:var(--on-accent);opacity:.8}
+.menu .mi.dis{color:var(--text-dis)}
+.menu .mi.dis:hover{background:none;color:var(--text-dis)}
+.menu .msep{height:1px;background:var(--line-soft);margin:4px 0 4px 26px}
+.tip{position:absolute;background:var(--tip-bg);color:var(--tip-fg);font-size:12px;padding:4px 8px;border-radius:var(--r-sm);box-shadow:var(--shadow-pop);white-space:nowrap;z-index:21}
+
+.side-stack{display:grid;gap:24px}
+.dialog .dbody{padding:18px 18px 14px;display:grid;grid-template-columns:40px 1fr;gap:4px 14px;background:var(--chrome);border-top:1px solid var(--line-soft)}
+.dialog .alert{grid-row:span 2;width:40px;height:40px;color:var(--text)}
+.dialog .alert svg{width:40px;height:40px;stroke-width:1.2}
+.dialog .q{font-weight:650;font-size:14px}
+.dialog .d{color:var(--text-2);font-size:12.5px}
+.dialog .dacts{grid-column:1/3;display:flex;gap:8px;margin-top:16px}
+.dialog .dacts .push{margin-left:auto}
+
+/* ---------- principles ---------- */
+.princ{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));border:1px solid var(--line-soft);border-radius:var(--r);background:var(--chrome);overflow:hidden}
+.princ>div{padding:14px 16px;border-bottom:1px solid var(--line-soft);display:grid;gap:4px;min-width:0}
+.princ .was{font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)}
+.princ p{margin:0;max-width:62ch}
+
+/* ---------- tokens ---------- */
+.tok-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line-soft);border-radius:var(--r);background:var(--content)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+th{font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2);background:var(--chrome)}
+td.n{font-variant-numeric:tabular-nums;text-align:right}
+.sw{display:inline-block;width:14px;height:14px;border:1px solid var(--line);border-radius:2px;vertical-align:-3px;margin-right:8px}
+code{font:12px var(--mono)}
+.pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:650}
+.pill.ok{background:color-mix(in oklab,#2f8a4c 18%,var(--content));color:color-mix(in oklab,#2f8a4c 70%,var(--text))}
+.pill.no{background:color-mix(in oklab,#c03a2b 18%,var(--content));color:color-mix(in oklab,#c03a2b 75%,var(--text))}
+
+/* ---------- type ---------- */
+.type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;padding-bottom:56px}
+.spec{background:var(--content);border:1px solid var(--line-soft);border-radius:var(--r);padding:18px 20px;display:grid;gap:12px;min-width:0}
+.spec .meta{font-size:11px;color:var(--text-2);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.serif-spec{font-family:var(--serif)}
+.serif-spec .big{font-size:38px;line-height:1.05;font-weight:500;text-wrap:balance}
+.serif-spec p{font-size:18px;line-height:1.5;margin:0;max-width:52ch}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-folder" viewBox="0 0 16 16"><path d="M1.5 4v8.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H7.8L6.3 3H2.5a1 1 0 0 0-1 1z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z M9.5 1.5v3h3 M5.5 8h5 M5.5 10.5h5"/></symbol>
+  <symbol id="i-image" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><path d="M1.5 11l3.5-3.5 3 3 2-2 4.5 4"/><circle cx="11" cy="5.8" r="1"/></symbol>
+  <symbol id="i-music" viewBox="0 0 16 16"><path d="M6 12.5V3l7-1.5v9"/><circle cx="4.3" cy="12.5" r="1.8"/><circle cx="11.3" cy="10.5" r="1.8"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 16 16"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M2 6h12 M2 10h12 M6 2v12"/></symbol>
+  <symbol id="i-home" viewBox="0 0 16 16"><path d="M2 7.5 8 2.5l6 5 M3.5 6.5v7h9v-7 M6.5 13.5v-4h3v4"/></symbol>
+  <symbol id="i-desktop" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="9" rx="1"/><path d="M5.5 14.5h5 M8 11.5v3"/></symbol>
+  <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2v8 M4.5 6.5 8 10l3.5-3.5 M2.5 13.5h11"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M2.5 4h11 M6 4V2.5h4V4 M3.5 4l.8 9.5h7.4l.8-9.5"/></symbol>
+  <symbol id="i-drive" viewBox="0 0 16 16"><rect x="1.5" y="5" width="13" height="6" rx="1"/><path d="M11.5 8h.5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 16 16"><path d="M10 3 5 8l5 5"/></symbol>
+  <symbol id="i-fwd" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></symbol>
+  <symbol id="i-list" viewBox="0 0 16 16"><path d="M2.5 4h11 M2.5 8h11 M2.5 12h11"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx=".5"/><rect x="9" y="2" width="5" height="5" rx=".5"/><rect x="2" y="9" width="5" height="5" rx=".5"/><rect x="9" y="9" width="5" height="5" rx=".5"/></symbol>
+  <symbol id="i-cols" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><path d="M6 2.5v11 M10.5 2.5v11"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 16 16"><path d="M2.5 6h2.5l3.5-3v10L5 10H2.5z M11 5.5a3.5 3.5 0 0 1 0 5 M12.8 3.8a6 6 0 0 1 0 8.4"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 16 16"><rect x="5.5" y="1.5" width="5" height="8" rx="2.5"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0 M8 12v2.5"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 16 16"><path d="M1.5 6a9.5 9.5 0 0 1 13 0 M3.8 8.6a6 6 0 0 1 8.4 0 M6 11.1a2.8 2.8 0 0 1 4 0"/><circle cx="8" cy="13.3" r=".6"/></symbol>
+  <symbol id="i-bat" viewBox="0 0 16 16"><rect x="1.5" y="4.5" width="12" height="7" rx="1"/><path d="M15 7v2 M3.5 6.5v3 M5.5 6.5v3 M7.5 6.5v3 M9.5 6.5v3"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11z M6.5 14h3"/></symbol>
+  <symbol id="i-apps" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 16 16"><path d="M3.5 1.5h9v13h-9z M5.5 4.5h5 M5.5 7h5 M5.5 9.5h3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></symbol>
+  <symbol id="i-dash" viewBox="0 0 16 16"><path d="M4 8h8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 16 16"><path d="M3 8h10"/></symbol>
+  <symbol id="i-shade" viewBox="0 0 16 16"><path d="M3 4h10 M4.5 10.5 8 7l3.5 3.5"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5"/></symbol>
+  <symbol id="i-chev-u" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-updown" viewBox="0 0 16 16"><path d="M5 6l3-3 3 3 M5 10l3 3 3-3"/></symbol>
+  <symbol id="i-tri" viewBox="0 0 10 10"><path d="M1 3h8L5 8z"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 40 40"><path d="M20 4 37 34H3z M20 15v9"/><circle cx="20" cy="29" r="1.2"/></symbol>
+</svg>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="mast-top">
+      <div>
+        <div class="stripes-mark" aria-hidden="true"></div>
+        <h1>Platinum Neue</h1>
+        <p class="mast-sub">Mockup 3 for a Plasma 6.8 theme. The window manager, application style and shell are all drawn from the same tokens. Drag windows by their titlebars, double-click a titlebar to shade it, and use the panel to switch.</p>
+      </div>
+    </div>
+    <div class="controls" role="toolbar" aria-label="Mockup settings">
+      <div class="ctl-group"><span class="ctl-label" id="lm">Mode</span>
+        <div class="seg" role="group" aria-labelledby="lm">
+          <button class="btn" data-mode="system" id="mode-system">System</button>
+          <button class="btn" data-mode="light" id="mode-light">Light</button>
+          <button class="btn" data-mode="dark" id="mode-dark">Dark</button>
+        </div></div>
+      <div class="ctl-group"><span class="ctl-label" id="la">Accent</span><div class="swatches" id="swatches" role="group" aria-labelledby="la"></div></div>
+      <div class="ctl-group"><span class="ctl-label" id="ls">Scale</span>
+        <div class="seg" role="group" aria-labelledby="ls">
+          <button class="btn" data-z="1" id="z1">100%</button>
+          <button class="btn" data-z="1.5" id="z15">150%</button>
+        </div></div>
+      <div class="ctl-group"><span class="ctl-label" id="lo">Buttons</span>
+        <div class="seg" role="group" aria-labelledby="lo">
+          <button class="btn" data-order="plasma" id="o-plasma">Plasma</button>
+          <button class="btn" data-order="platinum" id="o-platinum">Platinum</button>
+        </div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+<section class="wrap" aria-labelledby="h-desk">
+  <div class="sec-head"><h2 id="h-desk">Desktop</h2><p class="sec-note">1:1 at 100%. Dolphin is focused; Kate sits inactive behind it. The volume popup and a notification are open.</p></div>
+  <div class="scroller scrolly">
+  <div class="stage" id="stage">
+
+    <!-- Kate, inactive -->
+    <div class="win ed" data-app="editor" style="left:560px;top:70px;width:520px;height:390px">
+      <div class="tb">
+        <span class="pad"></span>
+        <button class="tbb b-close" data-act="close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+        <span class="stripes s1"></span><span class="title">notes.md — Kate</span><span class="stripes s2"></span>
+        <button class="tbb b-min" data-act="min" aria-label="Minimize"><svg class="i"><use href="#i-minus"/></svg></button>
+        <button class="tbb b-max" data-act="max" aria-label="Maximize"><svg class="i"><use href="#i-plus"/></svg></button>
+        <button class="tbb b-shade" data-act="shade" aria-label="Shade"><svg class="i"><use href="#i-shade"/></svg></button>
+      </div>
+      <div class="menubar"><span>File</span><span>Edit</span><span>View</span><span>Selection</span><span>Go</span><span>Tools</span><span>Settings</span><span>Help</span></div>
+      <div class="win-body">
+        <div class="editor">
+          <div data-n="1" class="h"># Platinum Neue notes</div>
+          <div data-n="2"> </div>
+          <div data-n="3">- Raised means pressable. Inset means editable.</div>
+          <div data-n="4">- Accent only for selection, focus, default</div>
+          <div data-n="5">  button and progress. Nothing else.</div>
+          <div data-n="6">- Pinstripes say "grab here", and only on</div>
+          <div data-n="7">  the window that has focus.</div>
+          <div data-n="8">- Shade is one double-click away.</div>
+          <div data-n="9">- Toggles look pressed in when on.</div>
+          <div data-n="10"> </div>
+          <div data-n="11" class="m">## Decided</div>
+          <div data-n="12">- Close button: neutral, faint warm tint.</div>
+          <div data-n="13">- Pinstripes: three grooves, 4px apart.</div>
+          <div data-n="14">- Serif: panel clock and tray popups only.</div>
+          <div data-n="15">- Depth: quiet. Edges and surfaces, no gloss.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dolphin, active -->
+    <div class="win fm active" data-app="files" style="left:36px;top:30px;width:760px;height:500px">
+      <div class="tb">
+        <span class="pad"></span>
+        <button class="tbb b-close" data-act="close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+        <span class="stripes s1"></span><span class="title">Documents — Dolphin</span><span class="stripes s2"></span>
+        <button class="tbb b-min" data-act="min" aria-label="Minimize"><svg class="i"><use href="#i-minus"/></svg></button>
+        <button class="tbb b-max" data-act="max" aria-label="Maximize"><svg class="i"><use href="#i-plus"/></svg></button>
+        <button class="tbb b-shade" data-act="shade" aria-label="Shade"><svg class="i"><use href="#i-shade"/></svg></button>
+      </div>
+      <div class="toolbar">
+        <div class="seg"><button class="btn icon" aria-label="Back"><svg class="i"><use href="#i-back"/></svg></button><button class="btn icon" aria-label="Forward" disabled><svg class="i"><use href="#i-fwd"/></svg></button></div>
+        <div class="field crumbs"><svg class="i"><use href="#i-home"/></svg><span>Home</span><span class="sep">›</span><span>Documents</span></div>
+        <div style="flex:1"></div>
+        <div class="seg" role="group" aria-label="View mode">
+          <button class="btn icon" aria-label="Icons"><svg class="i"><use href="#i-grid"/></svg></button>
+          <button class="btn icon" aria-label="Details" aria-pressed="true"><svg class="i"><use href="#i-list"/></svg></button>
+          <button class="btn icon" aria-label="Columns"><svg class="i"><use href="#i-cols"/></svg></button>
+        </div>
+        <label class="field" style="width:170px"><svg class="i"><use href="#i-search"/></svg><input id="fm-search" placeholder="Search Documents"></label>
+      </div>
+      <div class="win-body">
+        <nav class="side scrolly" aria-label="Places">
+          <button class="disc" aria-expanded="true" data-disc="pl"><svg><use href="#i-tri"/></svg>Places</button>
+          <ul class="places" id="pl">
+            <li><svg class="i"><use href="#i-home"/></svg>Home</li>
+            <li><svg class="i"><use href="#i-desktop"/></svg>Desktop</li>
+            <li class="on"><svg class="i"><use href="#i-doc"/></svg>Documents</li>
+            <li><svg class="i"><use href="#i-download"/></svg>Downloads</li>
+            <li><svg class="i"><use href="#i-music"/></svg>Music</li>
+            <li><svg class="i"><use href="#i-image"/></svg>Pictures</li>
+            <li><svg class="i"><use href="#i-trash"/></svg>Trash</li>
+          </ul>
+          <button class="disc" aria-expanded="true" data-disc="dv"><svg><use href="#i-tri"/></svg>Devices</button>
+          <ul class="places" id="dv">
+            <li><svg class="i"><use href="#i-drive"/></svg>System<span class="cap">1 TB</span></li>
+            <li><svg class="i"><use href="#i-drive"/></svg>Archive<span class="cap">4 TB</span></li>
+          </ul>
+        </nav>
+        <div class="list">
+          <div class="lhead"><div class="sorted">Name <svg class="i"><use href="#i-chev-u"/></svg></div><div>Size</div><div>Modified</div><div>Type</div></div>
+          <div class="lbody scrolly" role="listbox" aria-label="Files" id="files"></div>
+          <div class="statusbar"><span>12 items, 3 folders · 1 selected</span><span>412.6 GB free</span><input type="range" id="fm-zoom" min="0" max="100" value="35" aria-label="Icon size"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- notification -->
+    <div class="pop notif" role="status">
+      <div class="appic"><svg class="i"><use href="#i-download"/></svg></div>
+      <div class="app">Downloads · now</div>
+      <button class="btn flat icon x" aria-label="Dismiss"><svg class="i"><use href="#i-x"/></svg></button>
+      <div class="ttl">EB-Garamond.zip finished</div>
+      <div class="body">2.4 MB saved to Downloads.</div>
+      <div class="acts"><button class="btn">Open</button><button class="btn">Show in Folder</button></div>
+    </div>
+
+    <!-- tray popup -->
+    <div class="pop traypop" id="traypop">
+      <h3>Audio <button class="btn flat icon" aria-label="Audio settings" style="width:22px;height:22px"><svg class="i" style="width:14px;height:14px"><use href="#i-cols"/></svg></button></h3>
+      <div class="row"><svg class="i"><use href="#i-vol"/></svg><input type="range" id="vol" min="0" max="100" value="62" aria-label="Speaker volume"><span class="v" id="volv">62%</span></div>
+      <button class="combo" style="width:100%"><span>Built-in Speakers</span><span class="arr"><svg class="i"><use href="#i-updown"/></svg></span></button>
+      <div class="hr"></div>
+      <div class="row"><svg class="i"><use href="#i-mic"/></svg><input type="range" id="mic" min="0" max="100" value="40" aria-label="Microphone level"><span class="v" id="micv">40%</span></div>
+      <label class="chk switch"><input type="checkbox" id="mute-mic"><span class="box"></span><span class="lbl">Mute microphone</span></label>
+    </div>
+
+    <!-- panel -->
+    <div class="panel">
+      <button class="btn launcher icon" aria-label="Application launcher"><svg class="i"><use href="#i-apps"/></svg></button>
+      <span class="vsep"></span>
+      <button class="task" data-task="files" aria-pressed="true"><svg class="i"><use href="#i-folder"/></svg>Documents — Dolphin</button>
+      <button class="task" data-task="editor" aria-pressed="false"><svg class="i"><use href="#i-edit"/></svg>notes.md — Kate</button>
+      <div class="tray">
+        <button class="btn flat" aria-label="Notifications"><svg class="i"><use href="#i-bell"/></svg></button>
+        <button class="btn flat" aria-label="Volume" aria-pressed="true" id="traybtn"><svg class="i"><use href="#i-vol"/></svg></button>
+        <button class="btn flat" aria-label="Network"><svg class="i"><use href="#i-wifi"/></svg></button>
+        <button class="btn flat" aria-label="Battery, 78%"><svg class="i"><use href="#i-bat"/></svg></button>
+        <span class="vsep"></span>
+        <span class="clock"><small>Sat 7 Nov</small>14:32</span>
+      </div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="h-ctl">
+  <div class="sec-head"><h2 id="h-ctl">Controls</h2><p class="sec-note">Every widget in the application style, at rest. Hover, press and Tab through them to see the states.</p></div>
+  <div class="gallery-row">
+    <div class="win gwin active">
+      <div class="tb">
+        <span class="pad"></span>
+        <button class="tbb b-close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+        <span class="stripes s1"></span><span class="title">Widget Gallery</span><span class="stripes s2"></span>
+        <button class="tbb b-min" aria-label="Minimize"><svg class="i"><use href="#i-minus"/></svg></button>
+        <button class="tbb b-max" aria-label="Maximize"><svg class="i"><use href="#i-plus"/></svg></button>
+        <button class="tbb b-shade" aria-label="Shade"><svg class="i"><use href="#i-shade"/></svg></button>
+      </div>
+      <div class="menubar"><span>File</span><span>Edit</span><span class="open">View</span><span>Window</span><span>Help</span></div>
+      <div class="win-body">
+        <div class="menu" style="left:76px;top:-1px" role="menu" aria-label="View">
+          <div class="mi" role="menuitem"><span><svg class="i"><use href="#i-check"/></svg></span>Show Toolbar<span class="k">Ctrl+Shift+T</span><span></span></div>
+          <div class="mi" role="menuitem"><span></span>Show Hidden Files<span class="k">Ctrl+H</span><span></span></div>
+          <div class="msep"></div>
+          <div class="mi hl" role="menuitem"><span></span>Sort By<span class="k"></span><svg class="i"><use href="#i-chev-r"/></svg></div>
+          <div class="mi" role="menuitem"><span></span>Zoom In<span class="k">Ctrl++</span><span></span></div>
+          <div class="mi dis" role="menuitem" aria-disabled="true"><span></span>Zoom Out<span class="k">Ctrl+−</span><span></span></div>
+          <div class="msep"></div>
+          <div class="mi" role="menuitem"><span></span>Enter Full Screen<span class="k">F11</span><span></span></div>
+        </div>
+        <div class="menu" style="left:288px;top:66px;min-width:170px" role="menu" aria-label="Sort By">
+          <div class="mi" role="menuitem"><span><svg class="i"><use href="#i-check"/></svg></span>Name<span class="k"></span><span></span></div>
+          <div class="mi" role="menuitem"><span></span>Size<span class="k"></span><span></span></div>
+          <div class="mi" role="menuitem"><span></span>Date Modified<span class="k"></span><span></span></div>
+          <div class="mi" role="menuitem"><span></span>Type<span class="k"></span><span></span></div>
+        </div>
+
+        <div class="group" style="margin-top:250px"><span class="gl">Buttons</span>
+          <div class="row-w"><button class="btn">Cancel</button><button class="btn default">Apply</button><button class="btn" disabled>Disabled</button></div>
+          <div class="row-w">
+            <div class="seg" role="group" aria-label="Alignment"><button class="btn" aria-pressed="true">Left</button><button class="btn" aria-pressed="false">Center</button><button class="btn" aria-pressed="false">Right</button></div>
+            <span style="position:relative"><button class="btn icon" aria-label="Sort by date modified"><svg class="i"><use href="#i-list"/></svg></button>
+              <span class="tip" style="left:30px;top:2px">Sort by date modified</span></span>
+          </div>
+        </div>
+
+        <div class="group" style="margin-top:250px"><span class="gl">Choices</span>
+          <label class="chk"><input type="checkbox" id="c1" checked><span class="box"><svg class="ck" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg></span><span class="lbl">Open folders in new tabs</span></label>
+          <label class="chk mixed"><input type="checkbox" id="c2"><span class="box"><svg class="mx" viewBox="0 0 16 16"><path d="M4 8h8"/></svg></span><span class="lbl">Preview some file types</span></label>
+          <label class="chk"><input type="checkbox" id="c3" disabled><span class="box"></span><span class="lbl">Show thumbnails over network</span></label>
+          <div class="row-w" role="radiogroup" aria-label="Click behaviour">
+            <label class="chk radio"><input type="radio" name="clk" id="r1" checked><span class="box"></span><span class="lbl">Double-click opens</span></label>
+            <label class="chk radio"><input type="radio" name="clk" id="r2"><span class="box"></span><span class="lbl">Single-click</span></label>
+          </div>
+          <label class="chk switch"><input type="checkbox" id="s1" checked><span class="box"></span><span class="lbl">Night Light</span></label>
+        </div>
+
+        <div class="group"><span class="gl">Fields</span>
+          <label class="lab">Name<span class="field"><input id="f1" value="Platinum Neue"></span></label>
+          <label class="lab">Search<span class="field"><svg class="i"><use href="#i-search"/></svg><input id="f2" placeholder="Filter by name"></span></label>
+          <div class="row-w">
+            <button class="combo"><span>Medium (10 pt)</span><span class="arr"><svg class="i"><use href="#i-updown"/></svg></span></button>
+            <span class="spin"><span class="field"><input id="sp" value="24" aria-label="Control height"></span><span class="arrows"><button aria-label="Increase"><svg class="i"><use href="#i-chev-u"/></svg></button><button aria-label="Decrease"><svg class="i"><use href="#i-chev-d"/></svg></button></span></span>
+          </div>
+          <span class="field disabled"><input id="f3" value="Read only" disabled></span>
+        </div>
+
+        <div class="group"><span class="gl">Ranges</span>
+          <label class="lab">Cursor size<input type="range" id="rg1" min="0" max="100" step="25" value="50"><span class="ticks"></span></label>
+          <label class="lab">Copying 7 of 12 files<span class="progress"><i style="width:58%"></i></span></label>
+          <label class="lab">Indexing files<span class="progress busy"><i></i></span></label>
+        </div>
+
+        <div class="group"><span class="gl">Tabs</span>
+          <div>
+            <div class="tabs" role="tablist">
+              <button class="tab" role="tab" aria-selected="true" data-tab="0">General</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="1">Previews</button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="2">Trash</button>
+            </div>
+            <div class="tabpane" id="tabpane">The selected tab joins its pane: same surface, no line between them.</div>
+          </div>
+        </div>
+
+        <div class="group"><span class="gl">Scrolling</span>
+          <div class="scrollbox scrolly" tabindex="0" aria-label="Scrollable list"><ol id="sbox"></ol></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-stack">
+      <div class="win dialog active" role="dialog" aria-labelledby="dq">
+        <div class="tb">
+          <span class="pad"></span>
+          <button class="tbb b-close" aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+          <span class="stripes s1"></span><span class="title">Close Document</span><span class="stripes s2"></span>
+          <button class="tbb b-min" aria-label="Minimize" style="visibility:hidden"></button>
+          <button class="tbb b-max" aria-label="Maximize" style="visibility:hidden"></button>
+          <button class="tbb b-shade" aria-label="Shade" style="visibility:hidden"></button>
+        </div>
+        <div class="dbody">
+          <div class="alert"><svg class="i"><use href="#i-alert"/></svg></div>
+          <div class="q" id="dq">Save changes to “notes.md” before closing?</div>
+          <div class="d">If you don’t save, the changes you made in the last 12 minutes will be lost.</div>
+          <div class="dacts"><button class="btn">Don’t Save</button><button class="btn push">Cancel</button><button class="btn default">Save</button></div>
+        </div>
+      </div>
+      <div class="group" style="background:var(--chrome)"><span class="gl">Why these choices</span>
+        <p style="margin:0;color:var(--text-2);font-size:12.5px">The destructive option stays on the far left, away from Save. The default button is the only filled control in the window. The alert glyph is drawn as an outline in text colour, so colour isn't needed to read it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="h-pr">
+  <div class="sec-head"><h2 id="h-pr">From Platinum to Neue</h2><p class="sec-note">What each Platinum idea was for, and how it carries over.</p></div>
+  <div class="princ">
+    <div><span class="was">Bevels: raised and inset</span><p>Raised still means you can press it, and inset still means you can type in it. The heavy bevels become a 1px border, a highlight along the top edge and a soft shadow underneath. Fields have a darker top edge.</p></div>
+    <div><span class="was">Grey chrome, white content</span><p>Two surfaces carry the hierarchy, which means fewer lines and shadows are needed. Sidebars are chrome, lists and documents are content.</p></div>
+    <div><span class="was">Pinstriped titlebar</span><p>Pinstripes appear only on the free space beside the title, and only on the focused window. Inactive windows go flat, so you can tell which window has focus without relying on colour.</p></div>
+    <div><span class="was">WindowShade</span><p>Double-clicking a titlebar collapses the window to its title, everywhere. The Platinum button layout (close on the left, zoom and shade on the right) is a preset.</p></div>
+    <div><span class="was">One highlight colour</span><p>The accent is used only for selection, focus, the default button, progress and menu highlight. Toggles show they're on by looking pressed in, not by turning blue.</p></div>
+    <div><span class="was">Fixed, legible metrics</span><p>A 4px grid, 24px controls and permanent scrollbars with a grip. Every control has a 2px focus ring for keyboard use. Text contrast is at least 7:1, and control borders are at least 3:1.</p></div>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="h-tok">
+  <div class="sec-head"><h2 id="h-tok">Tokens and contrast</h2><p class="sec-note">Live values for the current mode and accent. These become <code>tokens.json</code> once approved.</p></div>
+  <div class="tok-grid">
+    <div class="tbl-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Role</th></tr></thead><tbody id="tok-body"></tbody></table></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pair</th><th class="n">Ratio</th><th class="n">Target</th><th></th></tr></thead><tbody id="ctr-body"></tbody></table></div>
+  </div>
+</section>
+
+<section class="wrap" aria-labelledby="h-type">
+  <div class="sec-head"><h2 id="h-type">Type</h2><p class="sec-note">Bricolage Grotesque is used for everything. At UI sizes, optical sizing tightens it up. EB Garamond is used only in the panel clock and tray popups.</p></div>
+  <div class="type-grid">
+    <div class="spec">
+      <span class="meta">BRICOLAGE GROTESQUE · UI SCALE</span>
+      <div style="font-size:22px;font-weight:650;font-stretch:88%">Display 22 / 650, 88% width</div>
+      <div style="font-size:16px;font-weight:620">Heading 16 / 620</div>
+      <div style="font-size:13px;font-weight:620">Window title 13 / 620</div>
+      <div style="font-size:13px">Body and controls 13 / 400, Plasma’s 10 pt at 96 dpi</div>
+      <div style="font-size:12px;color:var(--text-2)">Small 12 / 400 · status bars, list metadata, 0123456789</div>
+      <div style="font-size:11px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--text-2)">Section label 11 / 650</div>
+    </div>
+    <div class="spec serif-spec">
+      <span class="meta" style="font-family:var(--ui)">EB GARAMOND · RESERVE FACE</span>
+      <div class="big">Every interface is a set of promises about what will happen when you touch it.</div>
+      <p>Platinum kept its promises with bevels and stripes. This theme keeps them with fewer marks: raised things press, inset things accept text, and the grooved bar at the top of the focused window is where you take hold of it.</p>
+      <p style="font-size:17px;font-variant-numeric:lining-nums tabular-nums"><span style="color:var(--text-2)">Sat 7 Nov</span>&ensp;14:32&ensp;·&ensp;Audio&ensp;·&ensp;Network&ensp;·&ensp;Battery 78%</p>
+      <p style="font-style:italic;font-size:16px;color:var(--text-2)">Used in the panel clock and the headings of system tray popups.</p>
+    </div>
+  </div>
+</section>
+</main>
+
+<script>
+(function(){
+  const root=document.documentElement;
+  const store={get(k){try{return localStorage.getItem('pn-'+k)}catch(e){return null}},set(k,v){try{localStorage.setItem('pn-'+k,v)}catch(e){}}};
+
+  /* ---- accents ---- */
+  const ACCENTS=[
+    {n:'Indigo',  l:'#4C5BD4',d:'#5A68DA',ol:'#FFFFFF',od:'#FFFFFF',fl:'#4C5BD4',fd:'#7D89EE'},
+    {n:'Lavender',l:'#C9C9F4',d:'#8C8CD6',ol:'#1C1B19',od:'#141312',fl:'#5B5BC9',fd:'#A9A9EC'},
+    {n:'Graphite',l:'#5F5C57',d:'#6E6A64',ol:'#FFFFFF',od:'#FFFFFF',fl:'#5F5C57',fd:'#A9A59E'},
+    {n:'Teal',    l:'#2A7372',d:'#2F807F',ol:'#FFFFFF',od:'#FFFFFF',fl:'#2A7372',fd:'#4FB0AE'},
+    {n:'Rust',    l:'#A9472A',d:'#B85233',ol:'#FFFFFF',od:'#FFFFFF',fl:'#A9472A',fd:'#E08562'},
+    {n:'Plum',    l:'#7A4A8C',d:'#8A579D',ol:'#FFFFFF',od:'#FFFFFF',fl:'#7A4A8C',fd:'#C08FD3'}
+  ];
+  const sw=document.getElementById('swatches');
+  function setAccent(i){
+    const a=ACCENTS[i]||ACCENTS[0];
+    root.style.setProperty('--accent-l',a.l);root.style.setProperty('--accent-d',a.d);
+    root.style.setProperty('--on-accent-l',a.ol);root.style.setProperty('--on-accent-d',a.od);
+    root.style.setProperty('--focus-l',a.fl);root.style.setProperty('--focus-d',a.fd);
+    sw.querySelectorAll('.swatch').forEach((b,j)=>b.setAttribute('aria-pressed',j==i));
+    store.set('accent',i);update();
+  }
+  ACCENTS.forEach((a,i)=>{const b=document.createElement('button');b.className='swatch';b.id='acc-'+a.n.toLowerCase();
+    b.style.background=`linear-gradient(135deg,${a.l} 50%,${a.d} 50%)`;b.title=a.n;b.setAttribute('aria-label',a.n);
+    b.onclick=()=>setAccent(i);sw.appendChild(b)});
+
+  /* ---- mode / scale / order ---- */
+  function setMode(m){ if(m==='light'||m==='dark') root.setAttribute('data-theme',m); else {root.removeAttribute('data-theme');m='system'}
+    document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===m)); store.set('mode',m); update(); }
+  document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+  function setZ(z){root.style.setProperty('--z',z);document.querySelectorAll('[data-z]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.z===String(z)));store.set('z',z)}
+  document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>setZ(b.dataset.z));
+  function setOrder(o){document.body.classList.toggle('order-platinum',o==='platinum');document.querySelectorAll('[data-order]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.order===o));store.set('order',o)}
+  document.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>setOrder(b.dataset.order));  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',update);
+
+  /* ---- files ---- */
+  const F=[
+    ['folder','Invoices 2026','—','2 Nov','Folder'],
+    ['folder','Projects','—','Today 09:12','Folder'],
+    ['folder','Reading','—','19 Oct','Folder'],
+    ['doc','2026-11-03 receipt.pdf','112 KB','3 Nov','PDF document'],
+    ['sheet','budget-q4.ods','48 KB','21 Oct','Spreadsheet'],
+    ['image','desk-reference.png','840 KB','28 Oct','PNG image'],
+    ['doc','Bricolage specimen.pdf','2.1 MB','30 Oct','PDF document'],
+    ['music','field-recording.flac','28.4 MB','12 Oct','FLAC audio'],
+    ['doc','Kerning test.odt','33 KB','14 Oct','Text document'],
+    ['doc','Mac OS 8 Human Interface Guidelines.pdf','14.6 MB','9 Sep','PDF document'],
+    ['edit','notes.md','6 KB','Today 14:20','Markdown'],
+    ['image','wallpaper-grey.jpg','3.2 MB','1 Sep','JPEG image']
+  ];
+  const fl=document.getElementById('files');
+  F.forEach((r,i)=>{const d=document.createElement('div');d.className='lrow';d.setAttribute('role','option');d.tabIndex=r[1]==='notes.md'?0:-1;
+    d.setAttribute('aria-selected',r[1]==='notes.md');
+    const ic=r[0]==='folder'?`<svg class="i ico-folder"><use href="#i-folder"/></svg>`:`<svg class="i"><use href="#i-${r[0]}"/></svg>`;
+    d.innerHTML=`<div class="nm">${ic}<span>${r[1]}</span></div><div class="num">${r[2]}</div><div class="dt">${r[3]}</div><div class="kd">${r[4]}</div>`;
+    fl.appendChild(d)});
+  function sel(row){fl.querySelectorAll('.lrow').forEach(r=>{r.setAttribute('aria-selected',r===row);r.tabIndex=r===row?0:-1});row.focus({preventScroll:false})}
+  fl.addEventListener('click',e=>{const r=e.target.closest('.lrow');if(r)sel(r)});
+  fl.addEventListener('keydown',e=>{const rows=[...fl.querySelectorAll('.lrow')];const c=rows.findIndex(r=>r.getAttribute('aria-selected')==='true');
+    if(e.key==='ArrowDown'){e.preventDefault();sel(rows[Math.min(rows.length-1,c+1)])} if(e.key==='ArrowUp'){e.preventDefault();sel(rows[Math.max(0,c-1)])}});
+
+  /* ---- disclosure ---- */
+  document.querySelectorAll('[data-disc]').forEach(b=>b.onclick=()=>{const o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',!o);document.getElementById(b.dataset.disc).hidden=o});
+
+  /* ---- ranges ---- */
+  function bindRange(id,out){const r=document.getElementById(id);if(!r)return;const f=()=>{const p=(r.value-r.min)/(r.max-r.min)*100;r.style.setProperty('--pct',p+'%');if(out)document.getElementById(out).textContent=r.value+'%'};r.addEventListener('input',f);f()}
+  bindRange('vol','volv');bindRange('mic','micv');bindRange('fm-zoom');bindRange('rg1');
+
+  /* ---- tabs ---- */
+  const TABS=['The selected tab joins its pane: same surface, no line between them.','Previews are generated for files under 50 MB. Remote folders are skipped.','Items in the Trash older than 30 days are deleted automatically.'];
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));document.getElementById('tabpane').textContent=TABS[t.dataset.tab]});
+
+  /* ---- scrollbox ---- */
+  const sb=document.getElementById('sbox');['Activities','Appearance','Colors','Cursors','Desktop Effects','Display','Fonts','Icons','Keyboard','Notifications','Power','Screen Locking','Sounds','Window Decorations','Workspace Behavior'].forEach(x=>{const li=document.createElement('li');li.textContent=x+' · System Settings module';sb.appendChild(li)});
+
+  /* ---- window manager ---- */
+  const stage=document.getElementById('stage');
+  const wins=[...stage.querySelectorAll('.win')];let ztop=10;
+  function activate(w){wins.forEach(x=>x.classList.toggle('active',x===w));if(w){w.style.zIndex=++ztop;w.classList.remove('min')}
+    stage.querySelectorAll('.task').forEach(t=>t.setAttribute('aria-pressed',!!w&&t.dataset.task===w.dataset.app))}
+  wins.forEach((w,i)=>w.style.zIndex=++ztop);
+  let drag=null;
+  stage.addEventListener('pointerdown',e=>{const w=e.target.closest('.win');if(!w)return;activate(w);
+    const tb=e.target.closest('.tb');if(!tb||e.target.closest('button')||w.classList.contains('max'))return;
+    drag={w,x:e.clientX,y:e.clientY,l:w.offsetLeft,t:w.offsetTop,id:e.pointerId};tb.setPointerCapture(e.pointerId)});
+  stage.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const z=parseFloat(getComputedStyle(root).getPropertyValue('--z'))||1;
+    const nl=Math.max(-200,Math.min(stage.offsetWidth-80,drag.l+(e.clientX-drag.x)/z)),nt=Math.max(0,Math.min(stage.offsetHeight-70,drag.t+(e.clientY-drag.y)/z));
+    drag.w.style.left=nl+'px';drag.w.style.top=nt+'px'});
+  ['pointerup','pointercancel'].forEach(t=>stage.addEventListener(t,()=>drag=null));
+  stage.addEventListener('dblclick',e=>{const tb=e.target.closest('.tb');if(tb&&!e.target.closest('button'))tb.parentElement.classList.toggle('shaded')});
+  stage.addEventListener('click',e=>{const b=e.target.closest('.tbb');if(b){const w=b.closest('.win'),a=b.dataset.act;
+      if(a==='close'||a==='min'){w.classList.add('min');const next=wins.filter(x=>!x.classList.contains('min')).sort((p,q)=>q.style.zIndex-p.style.zIndex)[0];activate(next||null)}
+      if(a==='max')w.classList.toggle('max'); if(a==='shade')w.classList.toggle('shaded');return}
+    const t=e.target.closest('.task');if(t){const w=wins.find(x=>x.dataset.app===t.dataset.task);
+      if(w.classList.contains('active')&&!w.classList.contains('min')){w.classList.add('min');activate(null)}else activate(w)}
+    const tray=e.target.closest('#traybtn');if(tray){const p=document.getElementById('traypop');p.hidden=!p.hidden;tray.setAttribute('aria-pressed',!p.hidden)}
+    const x=e.target.closest('.notif .x');if(x)x.closest('.notif').hidden=true;
+  });
+
+  /* ---- tokens & contrast ---- */
+  const TOK=[['--chrome','Window and panel surface'],['--chrome-2','Sunken chrome, pressed, tracks'],['--raised','Buttons, menus, popups'],['--content','Lists, documents, fields'],
+    ['--line','Control borders'],['--line-soft','Separators'],['--frame','Window outline'],['--text','Primary text'],['--text-2','Secondary text'],['--text-dis','Disabled text'],['--accent','Selection, default, progress'],['--on-accent','Text on accent'],['--focus','Focus ring']];
+  const PAIRS=[['--text','--content','Text on content',7],['--text','--chrome','Text on chrome',7],['--text','--raised','Text on buttons',7],['--text-2','--chrome','Secondary on chrome',4.5],['--text-2','--content','Secondary on content',4.5],
+    ['--line','--chrome','Control border on chrome',3],['--line','--content','Control border on content',3],['--on-accent','--accent','Selected text on accent',4.5],['--focus','--chrome','Focus ring on chrome',3],['--focus','--content','Focus ring on content',3]];
+  function hex(v){v=v.trim();if(v[0]!=='#')return null;if(v.length===4)v='#'+[...v.slice(1)].map(c=>c+c).join('');return [1,3,5].map(i=>parseInt(v.slice(i,i+2),16))}
+  function lum(c){return c.map(x=>{x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)}).reduce((s,x,i)=>s+x*[.2126,.7152,.0722][i],0)}
+  function ratio(a,b){const A=lum(a),B=lum(b);return (Math.max(A,B)+.05)/(Math.min(A,B)+.05)}
+  function update(){
+    const cs=getComputedStyle(root);const g=k=>cs.getPropertyValue(k).trim();
+    document.getElementById('tok-body').innerHTML=TOK.map(([k,r])=>`<tr><td><code>${k.slice(2)}</code></td><td><span class="sw" style="background:var(${k})"></span><code>${g(k).toUpperCase()}</code></td><td>${r}</td></tr>`).join('');
+    document.getElementById('ctr-body').innerHTML=PAIRS.map(([f,b,l,t])=>{const A=hex(g(f)),B=hex(g(b));if(!A||!B)return'';const r=ratio(A,B);
+      return `<tr><td><span class="sw" style="background:var(${b});box-shadow:inset 0 0 0 3px var(${b}),inset 0 0 0 7px var(${f})"></span>${l}</td><td class="n">${r.toFixed(2)}:1</td><td class="n">${t}:1</td><td><span class="pill ${r>=t?'ok':'no'}">${r>=t?'Pass':'Fail'}</span></td></tr>`}).join('');
+  }
+
+  /* ---- init ---- */
+  setMode(store.get('mode')||'system');setAccent(+(store.get('accent')||0));setZ(store.get('z')||1);setOrder(store.get('order')||'plasma');
+})();
+</script>

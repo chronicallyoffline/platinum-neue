@@ -1,0 +1,6 @@
+File=platinumneue.kcfg
+ClassName=StyleConfigData
+NameSpace=PlatinumNeue
+Singleton=true
+Mutators=true
+GlobalEnums=true

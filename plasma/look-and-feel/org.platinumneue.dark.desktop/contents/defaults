@@ -1,0 +1,23 @@
+[kdeglobals][KDE]
+widgetStyle=PlatinumNeue
+
+[kdeglobals][General]
+ColorScheme=PlatinumNeueDark
+font=Bricolage Grotesque,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+menuFont=Bricolage Grotesque,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+toolBarFont=Bricolage Grotesque,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+smallestReadableFont=Bricolage Grotesque,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+
+[kdeglobals][WM]
+activeFont=Bricolage Grotesque,10,-1,5,600,0,0,0,0,0,0,0,0,0,0,1
+
+[plasmarc][Theme]
+name=platinum-neue-dark
+
+[kwinrc][org.kde.kdecoration2]
+library=org.kde.platinumneue
+theme=
+
+[ksplashrc][KSplash]
+Engine=KSplashQML
+Theme=org.kde.breeze.desktop

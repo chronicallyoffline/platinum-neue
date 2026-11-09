@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="180" viewBox="0 0 80 180"><style type="text/css" id="current-color-scheme">.ColorScheme-Highlight{color:#4C5BD4;}</style><defs></defs><g id="normal-topleft"><rect x="0" y="0" width="4" height="4" fill="none"/></g>
+<g id="normal-top"><rect x="4" y="0" width="4" height="4" fill="none"/></g>
+<g id="normal-topright"><rect x="8" y="0" width="4" height="4" fill="none"/></g>
+<g id="normal-left"><rect x="0" y="4" width="4" height="4" fill="none"/></g>
+<g id="normal-center"><rect x="4" y="4" width="4" height="4" fill="none"/></g>
+<g id="normal-right"><rect x="8" y="4" width="4" height="4" fill="none"/></g>
+<g id="normal-bottomleft"><rect x="0" y="8" width="4" height="4" fill="none"/></g>
+<g id="normal-bottom"><rect x="4" y="8" width="4" height="4" fill="none"/></g>
+<g id="normal-bottomright"><rect x="8" y="8" width="4" height="4" fill="none"/></g>
+<rect id="normal-hint-top-margin" x="0" y="16" width="4" height="4" fill="none"/>
+<rect id="normal-hint-bottom-margin" x="0" y="22" width="4" height="4" fill="none"/>
+<rect id="normal-hint-left-margin" x="0" y="28" width="6" height="6" fill="none"/>
+<rect id="normal-hint-right-margin" x="0" y="36" width="6" height="6" fill="none"/>
+<g id="hover-topleft"><rect x="0" y="44" width="4" height="4" fill="none"/><path d="M0,48 L0,46 A2,2 0 0 1 2,44 L4,44 L4,48 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-top"><rect x="4" y="44" width="4" height="4" fill="none"/><rect x="4" y="44" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-topright"><rect x="8" y="44" width="4" height="4" fill="none"/><path d="M12,48 L12,46 A2,2 0 0 0 10,44 L8,44 L8,48 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-left"><rect x="0" y="48" width="4" height="4" fill="none"/><rect x="0" y="48" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-center"><rect x="4" y="48" width="4" height="4" fill="none"/><rect x="4" y="48" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-right"><rect x="8" y="48" width="4" height="4" fill="none"/><rect x="8" y="48" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-bottomleft"><rect x="0" y="52" width="4" height="4" fill="none"/><path d="M0,52 L0,54 A2,2 0 0 0 2,56 L4,56 L4,52 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-bottom"><rect x="4" y="52" width="4" height="4" fill="none"/><rect x="4" y="52" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<g id="hover-bottomright"><rect x="8" y="52" width="4" height="4" fill="none"/><path d="M12,52 L12,54 A2,2 0 0 1 10,56 L8,56 L8,52 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.12"/></g>
+<rect id="hover-hint-top-margin" x="0" y="60" width="4" height="4" fill="none"/>
+<rect id="hover-hint-bottom-margin" x="0" y="66" width="4" height="4" fill="none"/>
+<rect id="hover-hint-left-margin" x="0" y="72" width="6" height="6" fill="none"/>
+<rect id="hover-hint-right-margin" x="0" y="80" width="6" height="6" fill="none"/>
+<g id="selected-topleft"><rect x="0" y="88" width="4" height="4" fill="none"/><path d="M1,92 L1,90 A1,1 0 0 1 2,89 L4,89 L4,92 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><path d="M0,92 L0,90 A2,2 0 0 1 2,88 L4,88 L4,89 L2,89 A1,1 0 0 0 1,90 L1,92 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-top"><rect x="4" y="88" width="4" height="4" fill="none"/><rect x="4" y="88" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><rect x="4" y="88" width="4" height="1" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-topright"><rect x="8" y="88" width="4" height="4" fill="none"/><path d="M11,92 L11,90 A1,1 0 0 0 10,89 L8,89 L8,92 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><path d="M12,92 L12,90 A2,2 0 0 0 10,88 L8,88 L8,89 L10,89 A1,1 0 0 1 11,90 L11,92 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-left"><rect x="0" y="92" width="4" height="4" fill="none"/><rect x="0" y="92" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><rect x="0" y="92" width="1" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-center"><rect x="4" y="92" width="4" height="4" fill="none"/><rect x="4" y="92" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/></g>
+<g id="selected-right"><rect x="8" y="92" width="4" height="4" fill="none"/><rect x="8" y="92" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><rect x="11" y="92" width="1" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-bottomleft"><rect x="0" y="96" width="4" height="4" fill="none"/><path d="M1,96 L1,98 A1,1 0 0 0 2,99 L4,99 L4,96 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><path d="M0,96 L0,98 A2,2 0 0 0 2,100 L4,100 L4,99 L2,99 A1,1 0 0 1 1,98 L1,96 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-bottom"><rect x="4" y="96" width="4" height="4" fill="none"/><rect x="4" y="96" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><rect x="4" y="99" width="4" height="1" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<g id="selected-bottomright"><rect x="8" y="96" width="4" height="4" fill="none"/><path d="M11,96 L11,98 A1,1 0 0 1 10,99 L8,99 L8,96 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.22"/><path d="M12,96 L12,98 A2,2 0 0 1 10,100 L8,100 L8,99 L10,99 A1,1 0 0 0 11,98 L11,96 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.55"/></g>
+<rect id="selected-hint-top-margin" x="0" y="104" width="4" height="4" fill="none"/>
+<rect id="selected-hint-bottom-margin" x="0" y="110" width="4" height="4" fill="none"/>
+<rect id="selected-hint-left-margin" x="0" y="116" width="6" height="6" fill="none"/>
+<rect id="selected-hint-right-margin" x="0" y="124" width="6" height="6" fill="none"/>
+<g id="selected+hover-topleft"><rect x="0" y="132" width="4" height="4" fill="none"/><path d="M1,136 L1,134 A1,1 0 0 1 2,133 L4,133 L4,136 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><path d="M0,136 L0,134 A2,2 0 0 1 2,132 L4,132 L4,133 L2,133 A1,1 0 0 0 1,134 L1,136 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-top"><rect x="4" y="132" width="4" height="4" fill="none"/><rect x="4" y="132" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><rect x="4" y="132" width="4" height="1" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-topright"><rect x="8" y="132" width="4" height="4" fill="none"/><path d="M11,136 L11,134 A1,1 0 0 0 10,133 L8,133 L8,136 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><path d="M12,136 L12,134 A2,2 0 0 0 10,132 L8,132 L8,133 L10,133 A1,1 0 0 1 11,134 L11,136 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-left"><rect x="0" y="136" width="4" height="4" fill="none"/><rect x="0" y="136" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><rect x="0" y="136" width="1" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-center"><rect x="4" y="136" width="4" height="4" fill="none"/><rect x="4" y="136" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/></g>
+<g id="selected+hover-right"><rect x="8" y="136" width="4" height="4" fill="none"/><rect x="8" y="136" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><rect x="11" y="136" width="1" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-bottomleft"><rect x="0" y="140" width="4" height="4" fill="none"/><path d="M1,140 L1,142 A1,1 0 0 0 2,143 L4,143 L4,140 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><path d="M0,140 L0,142 A2,2 0 0 0 2,144 L4,144 L4,143 L2,143 A1,1 0 0 1 1,142 L1,140 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-bottom"><rect x="4" y="140" width="4" height="4" fill="none"/><rect x="4" y="140" width="4" height="4" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><rect x="4" y="143" width="4" height="1" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<g id="selected+hover-bottomright"><rect x="8" y="140" width="4" height="4" fill="none"/><path d="M11,140 L11,142 A1,1 0 0 1 10,143 L8,143 L8,140 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.3"/><path d="M12,140 L12,142 A2,2 0 0 1 10,144 L8,144 L8,143 L10,143 A1,1 0 0 0 11,142 L11,140 Z" fill="currentColor" class="ColorScheme-Highlight" fill-opacity="0.7"/></g>
+<rect id="selected+hover-hint-top-margin" x="0" y="148" width="4" height="4" fill="none"/>
+<rect id="selected+hover-hint-bottom-margin" x="0" y="154" width="4" height="4" fill="none"/>
+<rect id="selected+hover-hint-left-margin" x="0" y="160" width="6" height="6" fill="none"/>
+<rect id="selected+hover-hint-right-margin" x="0" y="168" width="6" height="6" fill="none"/></svg>

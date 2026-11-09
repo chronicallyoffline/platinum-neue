@@ -1,0 +1,6 @@
+[Misc]
+Name=Platinum Neue
+ConfigPage=kstyle_config/platinumneuestyleconfig
+Comment=Widget style for KDE Frameworks
+[KDE]
+WidgetStyle=PlatinumNeue

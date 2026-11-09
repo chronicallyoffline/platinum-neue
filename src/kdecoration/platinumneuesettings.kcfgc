@@ -1,0 +1,7 @@
+File=platinumneuesettingsdata.kcfg
+ClassName=InternalSettings
+NameSpace=PlatinumNeue
+Singleton=false
+Mutators=true
+GlobalEnums=true
+Notifiers=OutlineCloseButton

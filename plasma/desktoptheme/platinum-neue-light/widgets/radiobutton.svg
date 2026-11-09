@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="106" viewBox="0 0 80 106"><style type="text/css" id="current-color-scheme">.ColorScheme-Highlight{color:#4C5BD4;}</style><defs></defs><rect id="hint-size" x="60" y="0" width="16" height="16" fill="none"/>
+<g id="normal"><rect x="0" y="0" width="16" height="16" fill="none"/><circle cx="8" cy="8" r="7.5" fill="#FCFBFA" stroke="#7E7A73" stroke-width="1"/><path d="M3.2,4.5 A6.5,6.5 0 0 1 12.8,4.5" fill="none" stroke="#CBC9C4"/></g>
+<g id="checked"><rect x="0" y="18" width="16" height="16" fill="none"/><circle cx="8" cy="26" r="7.5" fill="currentColor" class="ColorScheme-Highlight"/></g>
+<g id="hover"><rect x="0" y="36" width="16" height="16" fill="none"/><circle cx="8" cy="44" r="7" fill="none" stroke="#5F5B55" stroke-opacity="0.5"/></g>
+<g id="focus"><rect x="0" y="54" width="20" height="20" fill="none"/><circle cx="10" cy="64" r="9.5" fill="none" stroke="currentColor" class="ColorScheme-Highlight"/></g>
+<g id="symbol"><rect x="0" y="76" width="6" height="6" fill="none"/><circle cx="3" cy="79" r="2.5" fill="#FFFFFF"/></g>
+<g id="shadow"><rect x="0" y="84" width="16" height="16" fill="none"/></g></svg>
