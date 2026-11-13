@@ -77,12 +77,14 @@ class Sheet:
 
     def frame(self, prefix, fill=None, border=None, hi=None, shade=None, r=3, c=4, m=4, border_width=1,
               fill_opacity=1.0, border_opacity=1.0, margins=None, open_top=None, open_bottom=None, inset=(0, 0, 0, 0),
-              shade2=None, cast=None):
+              shade2=None, cast=None, hi_left=None, lo=None):
         """A rounded 9-slice frame. c = corner tile size, m = edge/centre tile size.
         fill/border/hi/shade are colours (or None). hi is a 1px light line inside the top edge
         (raised); shade is a 1px dark line inside the top edge (inset).
         shade2: a second, softer inset line below shade (deeper well).
         cast: a 1px shadow just below the bottom edge, drawn in the inset band (needs inset bottom >= 1).
+        hi_left / lo: Platinum's inner bevel: a lit line inside the left edge (with hi along the top), and
+        a shadow line inside the bottom and right edges.
         open_top/open_bottom: that side is square and drawn as a hairline of the given colour, or a
         (colour, opacity) pair (used by popup heading/footer strips that cover the popup's own edge)."""
         p = f"{prefix}-" if prefix else ""
@@ -156,6 +158,15 @@ class Sheet:
                     elif cast:
                         cx0, cx1 = (r, c) if fx == 0 else (0, c - r)
                         g.append(f'<rect x="{X + cx0}" y="{Y + c}" width="{cx1 - cx0}" height="1" {paint(cast)}/>')
+                    # inner bevel: segments from the end of the corner curve to the tile edge
+                    vy0, vy1 = (r, c) if fy == 0 else (0, c - r)        # vertical run, outside the curve
+                    hx0, hx1 = (r, c) if fx == 0 else (0, c - r)        # horizontal run, outside the curve
+                    if hi_left and fx == 0 and vy1 > vy0:
+                        g.append(f'<rect x="{X + bw}" y="{Y + vy0}" width="1" height="{vy1 - vy0}" {paint(hi_left)}/>')
+                    if lo and fx == 1 and vy1 > vy0:
+                        g.append(f'<rect x="{X + c - bw - 1}" y="{Y + vy0}" width="1" height="{vy1 - vy0}" {paint(lo)}/>')
+                    if lo and fy == 1 and hx1 > hx0:
+                        g.append(f'<rect x="{X + hx0}" y="{Y + c - bw - 1}" width="{hx1 - hx0}" height="1" {paint(lo)}/>')
                     body.append("".join(g))
                 else:
                     # edges and centre: fill + 1px border strip on the outer side
@@ -181,6 +192,12 @@ class Sheet:
                             body.append(f'<rect x="{X}" y="{Y + bw + 1}" width="{cw}" height="1" {paint(shade2)}/>')
                     if name == "bottom" and cast:
                         body.append(f'<rect x="{X}" y="{Y + rh}" width="{cw}" height="1" {paint(cast)}/>')
+                    if name == "left" and hi_left:
+                        body.append(f'<rect x="{X + bw}" y="{Y}" width="1" height="{rh}" {paint(hi_left)}/>')
+                    if name == "right" and lo:
+                        body.append(f'<rect x="{X + cw - bw - 1}" y="{Y}" width="1" height="{rh}" {paint(lo)}/>')
+                    if name == "bottom" and lo:
+                        body.append(f'<rect x="{X}" y="{Y + rh - bw - 1}" width="{cw}" height="1" {paint(lo)}/>')
                 self.element(p + name, TX, TY, TW, TH, "".join(body))
         self.y += W + it + ib + 4
         if margins:
@@ -257,53 +274,61 @@ def build(mode):
     if out.exists():
         shutil.rmtree(out)
 
-    # panel: chrome, frame-coloured edge, lit line inside
+    # Platinum bevel colours: a lit line inside the top/left edges, a shadow line inside bottom/right
+    pressed = mix(t["chrome"], "#000000", 0.38) if dark else mix(t["chrome"], t["text"], 0.15)
+    pressed_edge = mix(t["line"], "#000000", 0.35) if dark else mix(t["line"], t["text"], 0.25)
+    press_shade = mix(pressed, "#000000", 0.43 if dark else 0.18)
+    press_shade2 = mix(pressed, "#000000", 0.2 if dark else 0.08)
+    panel_hi = mix(t["chrome"], "#FFFFFF", 0.14 if dark else 0.8)
+    panel_lo = mix(t["chrome"], "#000000", 0.35) if dark else mix(t["chrome"], t["text"], 0.12)
+    btn_hi = mix(t["raised"], "#FFFFFF", 0.12 if dark else 0.85)
+    btn_lo = mix(t["raised"], "#000000", 0.3) if dark else mix(t["raised"], t["text"], 0.1)
+    pop_hi = mix(t["raised"], "#FFFFFF", 0.1 if dark else 0.85)
+    pop_lo = mix(t["raised"], "#000000", 0.3) if dark else mix(t["raised"], t["text"], 0.08)
+
+    # panel: a classic bevel. Docked at the screen edge, Plasma draws only its top tiles, so the rim is
+    # the frame-coloured edge and a clearly lit line; when floating, the sides and bottom close the bevel.
     s = Sheet()
-    s.frame("", fill=t["chrome"], border=t["frame"], hi=chrome_hi, margins=(2, 2, 3, 3))
-    s.shadow(shadow_a * 0.8, size=10, offset=2)
+    s.frame("", fill=t["chrome"], border=t["frame"], hi=panel_hi, hi_left=panel_hi, lo=panel_lo, margins=(2, 2, 3, 3))
+    s.shadow(shadow_a, size=10, offset=2)
     s.write(out / "widgets" / "panel-background.svg")
 
-    # popups and desktop widgets: raised surface
+    # popups and desktop widgets: raised sheets with the same inner bevel, and a deeper shadow
     for rel in ("dialogs/background.svg", "widgets/background.svg"):
         s = Sheet()
-        s.frame("", fill=t["raised"], border=t["frame"], hi=hi, margins=(8, 8, 8, 8))
+        s.frame("", fill=t["raised"], border=t["frame"], hi=pop_hi, hi_left=pop_hi, lo=pop_lo, margins=(8, 8, 8, 8))
         s.insets(1e-8)
-        s.shadow(shadow_a)
+        s.shadow(0.6 if dark else 0.26, size=16, offset=3)
         s.write(out / rel)
 
     # tooltips: same surface (panel tooltips draw with window colours), tighter margins
     s = Sheet()
-    s.frame("", fill=t["raised"], border=t["frame"], hi=hi, r=2, margins=(6, 6, 8, 8))
-    s.shadow(shadow_a * 0.8, size=10, offset=2)
+    s.frame("", fill=t["raised"], border=t["frame"], hi=pop_hi, hi_left=pop_hi, lo=pop_lo, r=2, margins=(6, 6, 8, 8))
+    s.shadow(shadow_a * 0.9, size=10, offset=2)
     s.write(out / "widgets" / "tooltip.svg")
 
-    # task manager, a depth ladder: active window pressed in, open windows quietly raised,
-    # minimized windows just outlined, launchers (no frame) flat; hover lifts fully
+    # task manager: real buttons. Open windows are raised like the apps' push buttons, the active window
+    # is pushed in, minimized windows are recessed, launchers (no frame) stay flat; hover lifts
     s = Sheet()
     m = (2, 2, 6, 6)
-    ti = (4, 4, 2, 2)   # mockup: 29px items in a 37px panel, 4px apart
-    cast = mix(t["chrome"], "#000000", 0.4 if dark else 0.13)
-    soft_line = mix(t["line"], t["chrome"], 0.45)
-    s.frame("normal", fill=mix(t["chrome"], t["raised"], 0.55), border=soft_line, hi=chrome_hi, cast=mix(t["chrome"], cast, 0.5), margins=m, inset=ti)
-    s.frame("minimized", border=mix(t["line"], t["chrome"], 0.55), margins=m, inset=ti)
-    s.frame("hover", fill=t["raised"], border=t["line"], hi=hi, cast=cast, margins=m, inset=ti)
-    focus_fill = mix(t["chrome"], t["chrome2"], 0.45 if dark else 0.6)
-    s.frame("focus", fill=focus_fill, border=mix(t["line"], t["chrome"], 0.25), shade=shade,
-            shade2=mix(focus_fill, shade, 0.4), margins=m, inset=ti)
-    s.frame("attention", fill=mix(t["chrome"], t["neutral"], 0.25), border=t["neutral"], margins=m, inset=ti)
+    ti = (3, 3, 2, 2)   # ~30px buttons in a 40px panel, with room below for the cast shadow
+    cast = mix(t["chrome"], "#000000", 0.45 if dark else 0.16)
+    s.frame("normal", fill=t["raised"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, cast=cast, margins=m, inset=ti)
+    s.frame("hover", fill=t["raisedHover"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, cast=cast, margins=m, inset=ti)
+    s.frame("focus", fill=pressed, border=pressed_edge, shade=press_shade, shade2=press_shade2, margins=m, inset=ti)
+    s.frame("minimized", fill=mix(t["chrome"], t["chrome2"], 0.6), border=mix(t["line"], t["chrome"], 0.45), shade=shade,
+            margins=m, inset=ti)
+    s.frame("attention", fill=mix(t["raised"], t["neutral"], 0.25), border=t["neutral"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo,
+            cast=cast, margins=m, inset=ti)
     s.frame("progress", fill=HL, fill_opacity=0.3, margins=m, inset=ti)
     s.write(out / "widgets" / "tasks.svg")
 
     # buttons in popups
     s = Sheet()
-    s.frame("normal", fill=t["raised"], border=t["line"], hi=hi, margins=(4, 4, 8, 8))
-    # pushed in, matching the app style: a clearly darker face, firmer edge, two-step shadow under the top
-    pressed = mix(t["chrome"], "#000000", 0.38) if dark else mix(t["chrome"], t["text"], 0.15)
-    pressed_edge = mix(t["line"], "#000000", 0.35) if dark else mix(t["line"], t["text"], 0.25)
-    press_shade = mix(pressed, "#000000", 0.43 if dark else 0.18)
-    press_shade2 = mix(pressed, "#000000", 0.2 if dark else 0.08)
+    s.frame("normal", fill=t["raised"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, margins=(4, 4, 8, 8))
+    # pressed: a clearly darker face, firmer edge, two-step shadow under the top (colours defined above)
     s.frame("pressed", fill=pressed, border=pressed_edge, shade=press_shade, shade2=press_shade2, margins=(5, 3, 8, 8))
-    s.frame("hover", fill=t["raisedHover"], border=t["line"], hi=hi, margins=(4, 4, 8, 8))
+    s.frame("hover", fill=t["raisedHover"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, margins=(4, 4, 8, 8))
     s.frame("focus", fill=t["raised"], border=HL, hi=hi, margins=(4, 4, 8, 8))
     s.frame("toolbutton-hover", fill=t["raised"], border=t["line"], hi=hi, margins=(4, 4, 4, 4))
     s.frame("toolbutton-pressed", fill=pressed, border=pressed_edge, shade=press_shade, shade2=press_shade2, margins=(5, 3, 4, 4))

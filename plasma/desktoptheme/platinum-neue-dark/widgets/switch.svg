@@ -6,8 +6,8 @@
 <g id="active-left"><rect x="0" y="21" width="8" height="16" fill="none"/><path d="M8,21 A8,8 0 0 0 8,37 Z" fill="currentColor" class="ColorScheme-Highlight"/></g>
 <g id="active-center"><rect x="8" y="21" width="4" height="16" fill="none"/><rect x="8" y="21" width="4" height="16" fill="currentColor" class="ColorScheme-Highlight"/></g>
 <g id="active-right"><rect x="12" y="21" width="8" height="16" fill="none"/><path d="M12,21 A8,8 0 0 1 12,37 Z" fill="currentColor" class="ColorScheme-Highlight"/></g>
-<g id="handle"><rect x="0" y="39" width="16" height="16" fill="none"/><circle cx="8" cy="47.5" r="7" fill="#1A1918"/><circle cx="8" cy="47" r="7" fill="#363532" stroke="#79756E"/></g>
-<g id="handle-hover"><rect x="0" y="57" width="16" height="16" fill="none"/><circle cx="8" cy="65.5" r="7" fill="#1A1918"/><circle cx="8" cy="65" r="7" fill="#3D3C39" stroke="#79756E"/></g>
-<g id="handle-pressed"><rect x="0" y="75" width="16" height="16" fill="none"/><circle cx="8" cy="83.5" r="7" fill="#1A1918"/><circle cx="8" cy="83" r="7" fill="#232220" stroke="#79756E"/></g>
+<g id="handle"><rect x="0" y="39" width="16" height="16" fill="none"/><circle cx="8" cy="47.5" r="7" fill="#181716"/><circle cx="8" cy="47" r="7" fill="#363532" stroke="#79756E"/></g>
+<g id="handle-hover"><rect x="0" y="57" width="16" height="16" fill="none"/><circle cx="8" cy="65.5" r="7" fill="#181716"/><circle cx="8" cy="65" r="7" fill="#3D3C39" stroke="#79756E"/></g>
+<g id="handle-pressed"><rect x="0" y="75" width="16" height="16" fill="none"/><circle cx="8" cy="83.5" r="7" fill="#181716"/><circle cx="8" cy="83" r="7" fill="#232220" stroke="#79756E"/></g>
 <g id="handle-focus"><rect x="0" y="93" width="18" height="18" fill="none"/><circle cx="9" cy="102" r="8.5" fill="none" stroke="currentColor" class="ColorScheme-Highlight"/></g>
 <g id="handle-shadow"><rect x="0" y="113" width="18" height="18" fill="none"/></g></svg>

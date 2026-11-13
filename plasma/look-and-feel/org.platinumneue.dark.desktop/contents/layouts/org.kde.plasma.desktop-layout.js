@@ -4,7 +4,7 @@ loadTemplate("org.kde.plasma.desktop.defaultPanel")
 var panel = panels()[0];
 if (panel) {
     panel.location = "bottom";
-    panel.height = 37;
+    panel.height = 40;
     panel.floating = false;
     var clocks = panel.widgets("org.kde.plasma.digitalclock");
     for (var i = 0; i < clocks.length; i++) {
