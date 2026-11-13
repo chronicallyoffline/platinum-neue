@@ -77,7 +77,7 @@ class Sheet:
 
     def frame(self, prefix, fill=None, border=None, hi=None, shade=None, r=3, c=4, m=4, border_width=1,
               fill_opacity=1.0, border_opacity=1.0, margins=None, open_top=None, open_bottom=None, inset=(0, 0, 0, 0),
-              shade2=None, cast=None, hi_left=None, lo=None):
+              shade2=None, cast=None, hi_left=None, lo=None, tint=None):
         """A rounded 9-slice frame. c = corner tile size, m = edge/centre tile size.
         fill/border/hi/shade are colours (or None). hi is a 1px light line inside the top edge
         (raised); shade is a 1px dark line inside the top edge (inset).
@@ -85,6 +85,7 @@ class Sheet:
         cast: a 1px shadow just below the bottom edge, drawn in the inset band (needs inset bottom >= 1).
         hi_left / lo: Platinum's inner bevel: a lit line inside the left edge (with hi along the top), and
         a shadow line inside the bottom and right edges.
+        tint: a (colour, opacity) wash over the fill, under the border and edge lines.
         open_top/open_bottom: that side is square and drawn as a hairline of the given colour, or a
         (colour, opacity) pair (used by popup heading/footer strips that cover the popup's own edge)."""
         p = f"{prefix}-" if prefix else ""
@@ -145,6 +146,8 @@ class Sheet:
                     g = []
                     if fill:
                         g.append(f'<path d="{inner if border else outer}" {paint(fill, fill_opacity)}/>')
+                    if tint:
+                        g.append(f'<path d="{inner if border else outer}" {paint(*tint)}/>')
                     if border:
                         g.append(f'<path d="{ring}" {paint(border, border_opacity)}/>')
                     if fy == 0:
@@ -172,6 +175,8 @@ class Sheet:
                     # edges and centre: fill + 1px border strip on the outer side
                     if fill:
                         body.append(f'<rect x="{X}" y="{Y}" width="{cw}" height="{rh}" {paint(fill, fill_opacity)}/>')
+                    if tint:
+                        body.append(f'<rect x="{X}" y="{Y}" width="{cw}" height="{rh}" {paint(*tint)}/>')
                     if border and name != "center":
                         if name == "top":
                             bx, by, bwid, bh = X, Y, cw, bw
@@ -310,17 +315,26 @@ def build(mode):
     # task manager: real buttons. Open windows are raised like the apps' push buttons, the active window
     # is pushed in, minimized windows are recessed, launchers (no frame) stay flat; hover lifts
     s = Sheet()
-    m = (2, 2, 6, 6)
-    ti = (3, 3, 2, 2)   # ~30px buttons in a 40px panel, with room below for the cast shadow
+    m = (1, 1, 6, 6)
     cast = mix(t["chrome"], "#000000", 0.45 if dark else 0.16)
-    s.frame("normal", fill=t["raised"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, cast=cast, margins=m, inset=ti)
-    s.frame("hover", fill=t["raisedHover"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, cast=cast, margins=m, inset=ti)
-    s.frame("focus", fill=pressed, border=pressed_edge, shade=press_shade, shade2=press_shade2, margins=m, inset=ti)
-    s.frame("minimized", fill=mix(t["chrome"], t["chrome2"], 0.6), border=mix(t["line"], t["chrome"], 0.45), shade=shade,
-            margins=m, inset=ti)
-    s.frame("attention", fill=mix(t["raised"], t["neutral"], 0.25), border=t["neutral"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo,
-            cast=cast, margins=m, inset=ti)
-    s.frame("progress", fill=HL, fill_opacity=0.3, margins=m, inset=ti)
+    # Even 4px gutters: above, below and between buttons. The panel's 2px rim (frame line + lit line) sits
+    # on the side facing the desktop, so that side's inset is 2px deeper; Plasma asks for "<edge>-<state>"
+    # first, then "<state>". The cast shadow is drawn inside the bottom gutter.
+    focus_tint = (HL, 0.42 if dark else 0.3)
+    for loc, ti in (("", (6, 4, 2, 2)), ("south-", (6, 4, 2, 2)), ("north-", (4, 6, 2, 2)),
+                    ("west-", (2, 2, 4, 6)), ("east-", (2, 2, 6, 4))):
+        s.frame(f"{loc}normal", fill=t["raised"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, cast=cast,
+                margins=m, inset=ti)
+        s.frame(f"{loc}hover", fill=t["raisedHover"], border=t["line"], hi=btn_hi, hi_left=btn_hi, lo=btn_lo, cast=cast,
+                margins=m, inset=ti)
+        # the active window: pushed in, washed and outlined in the accent colour
+        s.frame(f"{loc}focus", fill=pressed, tint=focus_tint, border=HL, shade=press_shade, shade2=press_shade2,
+                margins=m, inset=ti)
+        s.frame(f"{loc}minimized", fill=mix(t["chrome"], t["chrome2"], 0.6), border=mix(t["line"], t["chrome"], 0.45),
+                shade=shade, margins=m, inset=ti)
+        s.frame(f"{loc}attention", fill=mix(t["raised"], t["neutral"], 0.25), border=t["neutral"], hi=btn_hi,
+                hi_left=btn_hi, lo=btn_lo, cast=cast, margins=m, inset=ti)
+        s.frame(f"{loc}progress", fill=HL, fill_opacity=0.3, margins=m, inset=ti)
     s.write(out / "widgets" / "tasks.svg")
 
     # buttons in popups
